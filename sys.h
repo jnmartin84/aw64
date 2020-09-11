@@ -18,13 +18,16 @@
 
 #ifndef __SYSTEM_H__
 #define __SYSTEM_H__
-
+#include <map>
 #include "intern.h"
 #include <libdragon.h>
-
-
+#include "mixer.h"
+#include "sfxplayer.h"
+#include "regsinternal.h"
 #define NUM_COLORS 16
 #define BYTE_PER_PIXEL 3
+#define AI_STATUS_FULL  ( 1 << 31 )
+
 
 struct PlayerInput {
 	enum {
@@ -53,7 +56,8 @@ struct System {
 	typedef uint32_t (*TimerCallback)(uint32_t delay, void *param);
 	
 	PlayerInput input;
-
+	static Mixer *mxr;
+	static std::map<uint32_t, SfxPlayer*> pmap;
 	virtual ~System() {}
 
 	virtual void init(const char *title) = 0;
@@ -62,14 +66,14 @@ struct System {
 	virtual void setPalette(uint8_t s, uint8_t n, const uint8_t *buf) = 0;
 	virtual void copyRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *buf, uint32_t pitch) = 0;
 
-	virtual void pressed_key(struct controller_data pressed_data);
-	virtual void released_key(struct controller_data pressed_data);
+	virtual void pressed_key(struct controller_data pressed_data) = 0;
+	virtual void released_key(struct controller_data pressed_data) = 0;
 	
 	virtual void processEvents() = 0;
 	virtual void sleep(uint32_t duration) = 0;
-	virtual uint32_t getTimeStamp() = 0;
+	virtual volatile uint32_t getTimeStamp() = 0;
 
-	virtual void startAudio(AudioCallback callback, void *param) = 0;
+	virtual void startAudio(void *param) = 0;
 	virtual void stopAudio() = 0;
 	virtual uint32_t getOutputSampleRate() = 0;
 	

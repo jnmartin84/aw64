@@ -694,7 +694,7 @@ void VirtualMachine::snd_playSound(uint16_t resNum, uint8_t freq, uint8_t vol, u
 		mixer->stopChannel(channel);
 	} else {
 		MixerChunk mc;
-		memset(&mc, 0, sizeof(mc));
+		__n64_memset_ASM(&mc, 0, sizeof(mc));
 		mc.data = me->bufPtr + 8; // skip header
 		mc.len = READ_BE_UINT16(me->bufPtr) * 2;
 		mc.loopLen = READ_BE_UINT16(me->bufPtr + 2) * 2;

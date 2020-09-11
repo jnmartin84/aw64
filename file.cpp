@@ -43,24 +43,24 @@ struct stdFile : File_impl {
 		_ioErr = false;
 		_fp = rom_open(path, mode);
         //printf("open %s %d\n", path, _fp);
-		return (_fp > -1);
+		return (_fp != -1);
 	}
 	void close() {
-		if (_fp > -1) {
+		if (_fp != -1) {
 			//printf("close %d\n", _fp);
 			rom_close(_fp);
 			_fp = -1;
 		}
 	}
 	void seek(int32_t off) {
-		if (_fp > -1) {
+		if (_fp != -1) {
 			//printf("seek %d %d\n", _fp, off);
 			rom_lseek(_fp, off, SEEK_SET);
 		}
 	}
 	void read(void *ptr, uint32_t size) {
 		//printf("%08X %08X %08X\n", _fp, ptr, size);
-	if (_fp > -1) {
+	if (_fp !=	-1) {
 			int r = rom_read(_fp, ptr, size);
 			//printf("%d = read %d %08X %d\n", r, _fp, (uint32_t)ptr, size);
 			if (r != size) {
@@ -69,7 +69,7 @@ struct stdFile : File_impl {
 		}
 	}
 	void write(void *ptr, uint32_t size) {
-		if (_fp > -1) {
+		if (_fp != -1) {
 			uint32_t r = size;//0;//fwrite(ptr, 1, size, _fp);
 			if (r != size) {
 				_ioErr = true;
@@ -134,10 +134,10 @@ bool File::open(const char *filename, const char *directory, const char *mode) {
 	sprintf(buf, "%s", filename);
 	char *p = buf;
 	string_lower(p);
-	bool opened = _impl->open(buf, mode) != -1;
+	bool opened = _impl->open(buf, mode);
 	if (!opened) { // let's try uppercase
 		string_upper(p);
-		opened = _impl->open(buf, mode) != -1;
+		opened = _impl->open(buf, mode);
 	}
 	return opened;
 }

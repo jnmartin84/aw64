@@ -21,7 +21,7 @@ PROG_NAME = aw
 #CFLAGS = -DTRUECOLOR -std=gnu99 -march=vr4300 -mtune=vr4300 -mips3 -Wall -G4 -O3 -I$(ROOTDIR)/include -I$(ROOTDIR)/mips64-elf/include
 #CFLAGS_ASM = -std=gnu99 -march=vr4300 -mtune=vr4300 -Wall -mips3 -G4 -O3 -I$(ROOTDIR)/include -I$(ROOTDIR)/mips64-elf/include
 #ASFLAGS = -mtune=vr4300 -march=vr4300
-CFLAGS_ASM = -g -std=gnu99 -march=vr4300 -mtune=vr4300 -Wall -G4 -O3 -I$(ROOTDIR)/include -I$(ROOTDIR)/mips64-elf/include
+CFLAGS_ASM = -g -std=gnu99 -march=vr4300 -mtune=vr4300 -Wall -G4 -Os -I$(ROOTDIR)/include -I$(ROOTDIR)/mips64-elf/include
 
 CC = $(GCCN64PREFIX)gcc
 AS = $(GCCN64PREFIX)as
@@ -37,7 +37,7 @@ OBJDUMP = $(GCCN64PREFIX)objdump
 DEFINES = -DSYS_BIG_ENDIAN
 
 CXX = $(GCCN64PREFIX)g++
-CXXFLAGS:= -std=c++11 -fno-rtti -fno-exceptions -march=vr4300 -mtune=vr4300 -O2 -Wall -G0 -Wl,--defsym -Wl,__cxa_pure_virtual=0 -Wl,--defsym -Wl,__cxa_deleted_virtual=0 -Wundef -Wwrite-strings -Wnon-virtual-dtor -Wno-multichar -I$(ROOTDIR)/include -I$(ROOTDIR)/mips64-elf/include -fno-use-cxa-atexit
+CXXFLAGS:= -std=c++11 -fno-rtti -fno-exceptions -march=vr4300 -mtune=vr4300 -Os -Wall -G0 -Wl,--defsym -Wl,__cxa_pure_virtual=0 -Wl,--defsym -Wl,__cxa_deleted_virtual=0 -Wundef -Wwrite-strings -Wnon-virtual-dtor -Wno-multichar -I$(ROOTDIR)/include -I$(ROOTDIR)/mips64-elf/include -fno-use-cxa-atexit
 
 #CXXFLAGS:= -O3 -march=vr4300 -mtune=vr4300 -fno-strict-aliasing -Wall -g -G0 -std=gnu++98 -fno-rtti -fno-exceptions -Wall -Wno-unknown-pragmas -Wshadow
 
@@ -73,7 +73,7 @@ DEPS = $(SRCS:.cpp=.d)
 game.z64: game.elf
 	$(OBJCOPY) game.elf game.bin -O binary
 	rm -f game.z64
-	$(N64TOOL) -l 32M                              \
+	$(N64TOOL) -l 4M                              \
 		-h $(HEADERPATH)/$(HEADERNAME)	\
 		-o game.z64 -t "game" game.bin	\
 		-s $(MEMLISTBIN_OFFSET) data/MEMLIST.BIN	\

@@ -131,7 +131,7 @@ const int BANK0D_FILESIZE = BANK0D_size;
 
 typedef struct rom_file_info_s
 {
-    uint32_t fd;
+    int32_t fd;
     uint32_t rom_base;
     uint32_t size;
     uint32_t seek;
@@ -163,7 +163,7 @@ long rom_tell(int fd)
         return -1;
     }
 
-	int actually_opened = 0;
+/*	int actually_opened = 0;
 	
     for (int i=0;i<MAX_FILES;i++)
     {
@@ -176,7 +176,7 @@ long rom_tell(int fd)
 	if(!actually_opened)
 	{
 		return -1;
-	}
+	}*/
 	
     return files[fd].seek;
 }
@@ -189,7 +189,7 @@ int rom_lseek(int fd, off_t offset, int whence)
         return -1;
     }
 
-	int actually_opened = 0;
+/*	int actually_opened = 0;
 	
     for (int i=0;i<MAX_FILES;i++)
     {
@@ -203,7 +203,7 @@ int rom_lseek(int fd, off_t offset, int whence)
 	{
 		return -1;
 	}	
-	
+*/	
     switch (whence)
     {
         case SEEK_SET:
@@ -232,13 +232,6 @@ int rom_lseek(int fd, off_t offset, int whence)
     return files[fd].seek;
 }
 
-void strupr(const char *s, int len) {
-	int i;
-	for(i=0;i<len;i++) {
-		((char *)s)[i] = rom_toupper(s[i]);
-	}
-}
-
 int rom_open(/*int FILE_START, */const char *name/*, int size*/, const char *mode)
 {
 	int FILE_START;
@@ -247,68 +240,64 @@ int rom_open(/*int FILE_START, */const char *name/*, int size*/, const char *mod
     int had_open_file = 0;
     int i;
 
-	strupr(name, rom_strlen((char *)name));
-	
-	if(!rom_strCmp("MEMLIST.BIN",name))
-	{
+	if('M' == name[0]) {
 		FILE_START = MEMLIST_FILE;
 		size = MEMLIST_FILESIZE;
 	}
-	else if(!rom_strCmp("BANK01",name)) {
+	else if('1' == name[1]) {
 		FILE_START = BANK01_FILE;
 		size = BANK01_FILESIZE;
 	}	
- 	else if(!rom_strCmp("BANK02",name)) {
+ 	else if('2' == name[1]) {
 		FILE_START = BANK02_FILE;
 		size = BANK02_FILESIZE;
 	}
-	else if(!rom_strCmp("BANK03",name)) {
+	else if('3' == name[1]) {
 		FILE_START = BANK03_FILE;
 		size = BANK03_FILESIZE;
 	}	
-	else if(!rom_strCmp("BANK04",name)) {
+	else if('4' == name[1]) {
 		FILE_START = BANK04_FILE;
 		size = BANK04_FILESIZE;
 	}
-	else if(!rom_strCmp("BANK05",name)) {
+	else if('5' == name[1]) {
 		FILE_START = BANK05_FILE;
 		size = BANK05_FILESIZE;
 	}	
- 	else if(!rom_strCmp("BANK06",name)) {
+ 	else if('6' == name[1]) {
 		FILE_START = BANK06_FILE;
 		size = BANK06_FILESIZE;
 	}
-	else if(!rom_strCmp("BANK07",name)) {
+	else if('7' == name[1]) {
 		FILE_START = BANK07_FILE;
 		size = BANK07_FILESIZE;
 	}	
-	else if(!rom_strCmp("BANK08",name)) {
+	else if('8' == name[1]) {
 		FILE_START = BANK08_FILE;
 		size = BANK08_FILESIZE;
 	}  	
-	else if(!rom_strCmp("BANK09",name)) {
+	else if('9' == name[1]) {
 		FILE_START = BANK09_FILE;
 		size = BANK09_FILESIZE;
 	}	
- 	else if(!rom_strCmp("BANK0A",name)) {
+ 	else if('A' == name[1]) {
 		FILE_START = BANK0A_FILE;
 		size = BANK0A_FILESIZE;
 	}
-	else if(!rom_strCmp("BANK0B",name)) {
+	else if('B' == name[1]) {
 		FILE_START = BANK0B_FILE;
 		size = BANK0B_FILESIZE;
 	}	
-	else if(!rom_strCmp("BANK0C",name)) {
+	else if('C' == name[1]) {
 		FILE_START = BANK0C_FILE;
 		size = BANK0C_FILESIZE;
 	}	
-	else if(!rom_strCmp("BANK0D",name)) {
+	else if('D' == name[1]) {
 		FILE_START = BANK0D_FILE;
 		size = BANK0D_FILESIZE;
 	}
 	else {
-		printf("bad rom_open\n");
-		while(1) {}
+		return -1;
 	}
 	
     for (i=0;i<MAX_FILES;i++)
@@ -332,9 +321,9 @@ int rom_open(/*int FILE_START, */const char *name/*, int size*/, const char *mod
 		files[i].seek     = 0;
 
 		file_opened[i]    = 1;
-		return files[i].fd;
+		return i;
 	}
- }
+}
 
 
 int rom_close(int fd)
@@ -348,23 +337,24 @@ int rom_close(int fd)
         return -1;
     }
 
-    for (i=0;i<MAX_FILES;i++)
-    {
-        if(files[i].fd == fd)
-        {
-            files[i].fd = 0xFFFFFFFF;
-            files[i].rom_base = 0xFFFFFFFF;
-            files[i].size = 0xFFFFFFFF;
-            files[i].seek = 0xFFFFFFFF;
+//    for (i=0;i<MAX_FILES;i++)
+ //   {
+   //     if(files[i].fd == fd)
+     //   {
+			
+            files[fd].fd = -1;
+            files[fd].rom_base = 0;
+            files[fd].size = 0;
+            files[fd].seek = 0;
 			closed_a_file = 1;
-            break;
-        }
-    }
+       //     break;
+        //}
+    //}
 
-	if(closed_a_file)
-	{
-	    file_opened[i] = 0;
-	}
+	//if(closed_a_file)
+	//{
+	    file_opened[fd] = 0;
+	//}
 
     return 0;
 }
@@ -381,7 +371,7 @@ int rom_read(int fd, void *buf, size_t nbyte)
         return -1;
     }
 
-	int actually_opened = 0;
+/*	int actually_opened = 0;
 	
     for (int i=0;i<MAX_FILES;i++)
     {
@@ -395,7 +385,7 @@ int rom_read(int fd, void *buf, size_t nbyte)
 	{
 		return -1;
 	}
-	
+*/	
 	ROM_base_address = files[fd].rom_base;
     current_ROM_seek = files[fd].seek;
     count            = nbyte;

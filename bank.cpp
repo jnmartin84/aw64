@@ -29,9 +29,9 @@ bool Bank::read(const MemEntry *me, uint8_t *buf) {
 
 	bool ret = false;
 	char bankName[10];
-	sprintf(bankName, "BANK%02X", me->bankId);
+	sprintf(bankName, "%02X", me->bankId);
 	File f;
-
+	
 	if (!f.open(bankName, _dataDir))
 		error("Bank::read() unable to open '%s'", bankName);
 
@@ -54,11 +54,11 @@ bool Bank::read(const MemEntry *me, uint8_t *buf) {
 
 void Bank::decUnk1(uint8_t numChunks, uint8_t addCount) {
 	uint16_t count = getCode(numChunks) + addCount + 1;
-	debug(DBG_BANK, "Bank::decUnk1(%d, %d) count=%d", numChunks, addCount, count);
+	//debug(DBG_BANK, "Bank::decUnk1(%d, %d) count=%d", numChunks, addCount, count);
 	_unpCtx.datasize -= count;
 	while (count--) {
 		//if(!(_oBuf >= _iBuf && _oBuf >= _startBuf)) printf("obuf %08X ?? ibuf %08X ?? startbuf %08X\n", _oBuf, _iBuf, _startBuf);
-		assert(_oBuf >= _iBuf && _oBuf >= _startBuf);
+		//assert(_oBuf >= _iBuf && _oBuf >= _startBuf);
 		*_oBuf = (uint8_t)getCode(8);
 		--_oBuf;
 	}
@@ -70,10 +70,10 @@ void Bank::decUnk1(uint8_t numChunks, uint8_t addCount) {
 void Bank::decUnk2(uint8_t numChunks) {
 	uint16_t i = getCode(numChunks);
 	uint16_t count = _unpCtx.size + 1;
-	debug(DBG_BANK, "Bank::decUnk2(%d) i=%d count=%d", numChunks, i, count);
+	//debug(DBG_BANK, "Bank::decUnk2(%d) i=%d count=%d", numChunks, i, count);
 	_unpCtx.datasize -= count;
 	while (count--) {
-		assert(_oBuf >= _iBuf && _oBuf >= _startBuf);
+		//assert(_oBuf >= _iBuf && _oBuf >= _startBuf);
 		*_oBuf = *(_oBuf + i);
 		--_oBuf;
 	}
@@ -140,7 +140,7 @@ bool Bank::nextChunk() {
 	bool CF = rcr(false);
 	if (_unpCtx.chk == 0) {
 		//if(!(_iBuf >= _startBuf)) printf("Bank::nextChunk _iBuf %08X _startBuf %08X\n", _iBuf, _startBuf);
-		assert(_iBuf >= _startBuf);
+		//assert(_iBuf >= _startBuf);
 		_unpCtx.chk = READ_BE_UINT32(_iBuf); _iBuf -= 4;
 		_unpCtx.crc ^= _unpCtx.chk;
 		CF = rcr(true);

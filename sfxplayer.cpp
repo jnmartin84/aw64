@@ -22,6 +22,7 @@
 #include "serializer.h"
 #include "sys.h"
 
+extern "C" void* __n64_memset_ASM(void *a, uint8_t v, size_t s);
 
 SfxPlayer::SfxPlayer(Mixer *mix, Resource *res, System *stub)
 	: mixer(mix), res(res), sys(stub), _delay(0), _resNum(0) {
@@ -52,7 +53,7 @@ void SfxPlayer::loadSfxModule(uint16_t resNum, uint16_t delay, uint8_t pos) {
 
 	if (me->state == MEMENTRY_STATE_LOADED && me->type == Resource::RT_MUSIC) {
 		_resNum = resNum;
-		memset(&_sfxMod, 0, sizeof(SfxModule));
+		__n64_memset_ASM(&_sfxMod, 0, sizeof(SfxModule));
 		_sfxMod.curOrder = pos;
 		_sfxMod.numOrder = READ_BE_UINT16(me->bufPtr + 0x3E);
 		debug(DBG_SND, "SfxPlayer::loadSfxModule() curOrder = 0x%X numOrder = 0x%X", _sfxMod.curOrder, _sfxMod.numOrder);
@@ -75,7 +76,7 @@ void SfxPlayer::loadSfxModule(uint16_t resNum, uint16_t delay, uint8_t pos) {
 
 void SfxPlayer::prepareInstruments(const uint8_t *p) {
 
-	memset(_sfxMod.samples, 0, sizeof(_sfxMod.samples));
+	__n64_memset_ASM(_sfxMod.samples, 0, sizeof(_sfxMod.samples));
 
 	for (int i = 0; i < 15; ++i) {
 		SfxInstrument *ins = &_sfxMod.samples[i];
@@ -85,7 +86,7 @@ void SfxPlayer::prepareInstruments(const uint8_t *p) {
 			MemEntry *me = &res->_memList[resNum];
 			if (me->state == MEMENTRY_STATE_LOADED && me->type == Resource::RT_SOUND) {
 				ins->data = me->bufPtr;
-				memset(ins->data + 8, 0, 4);
+				__n64_memset_ASM(ins->data + 8, 0, 4);
 				debug(DBG_SND, "Loaded instrument 0x%X n=%d volume=%d", resNum, i, ins->volume);
 			} else {
 				error("Error loading instrument 0x%X", resNum);
@@ -135,7 +136,7 @@ void SfxPlayer::handleEvents() {
 
 void SfxPlayer::handlePattern(uint8_t channel, const uint8_t *data) {
 	SfxPattern pat;
-	memset(&pat, 0, sizeof(SfxPattern));
+	__n64_memset_ASM(&pat, 0, sizeof(SfxPattern));
 	pat.note_1 = READ_BE_UINT16(data + 0);
 	pat.note_2 = READ_BE_UINT16(data + 2);
 	if (pat.note_1 != 0xFFFD) {
@@ -186,7 +187,7 @@ void SfxPlayer::handlePattern(uint8_t channel, const uint8_t *data) {
 			mixer->stopChannel(channel);
 		} else if (pat.sampleBuffer != 0) {
 			MixerChunk mc;
-			memset(&mc, 0, sizeof(mc));
+			__n64_memset_ASM(&mc, 0, sizeof(mc));
 			mc.data = pat.sampleBuffer + pat.sampleStart;
 			mc.len = pat.sampleLen;
 			mc.loopPos = pat.loopPos;

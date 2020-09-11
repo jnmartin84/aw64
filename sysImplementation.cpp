@@ -20,6 +20,10 @@
 #include <libdragon.h>
 #include "sys.h"
 #include "util.h"
+#include <map>
+#include "sfxplayer.h"
+
+static volatile uint64_t timekeeping=0;
 
 struct N64Stub : System {
 	
@@ -43,9 +47,10 @@ struct N64Stub : System {
 	virtual void pressed_key(struct controller_data pressed_data);
 	virtual void released_key(struct controller_data pressed_data);
 	virtual void sleep(uint32_t duration);
-	virtual uint32_t getTimeStamp();
-	virtual void startAudio(AudioCallback callback, void *param);
+	virtual volatile uint32_t getTimeStamp();
+	virtual void startAudio(void *param);
 	virtual void stopAudio();
+	
 	virtual uint32_t getOutputSampleRate();
 	virtual void *addTimer(uint32_t delay, TimerCallback callback, void *param);
 	virtual void removeTimer(void *timerId);
@@ -55,101 +60,41 @@ struct N64Stub : System {
 	virtual void unlockMutex(void *mutex);
 	uint8_t* getOffScreenFramebuffer();
 
+//	static void audio_callback();
+	
 	void prepareGfxMode();
 	void cleanupGfxMode();
 	void switchGfxMode(bool fullscreen, uint8_t scaler);
 };
 
-/*/
-struct SDLStub : System {
-	typedef void (SDLStub::*ScaleProc)(uint16_t *dst, uint16_t dstPitch, const uint16_t *src, uint16_t srcPitch, uint16_t w, uint16_t h);
 
-	enum {
-		SCREEN_W = 320,
-		SCREEN_H = 200,
-		SOUND_SAMPLE_RATE = 22050
-	};
-
-	struct Scaler {
-		const char *name;
-		ScaleProc proc;
-		uint8_t factor;
-	};
-	
-	static const Scaler _scalers[];
-
-	uint8_t *_offscreen;
-	SDL_Surface *_screen;
-	SDL_Surface *_sclscreen;
-	bool _fullscreen;
-	uint8_t _scaler;
-
-	uint16_t palette[NUM_COLORS];
-
-	virtual ~SDLStub() {}
-	virtual void init(const char *title);
-	virtual void destroy();
-	virtual void setPalette(uint8_t s, uint8_t n, const uint8_t *buf);
-	virtual void copyRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *buf, uint32_t pitch);
-	virtual void processEvents();
-	virtual void sleep(uint32_t duration);
-	virtual uint32_t getTimeStamp();
-	virtual void startAudio(AudioCallback callback, void *param);
-	virtual void stopAudio();
-	virtual uint32_t getOutputSampleRate();
-	virtual void *addTimer(uint32_t delay, TimerCallback callback, void *param);
-	virtual void removeTimer(void *timerId);
-	virtual void *createMutex();
-	virtual void destroyMutex(void *mutex);
-	virtual void lockMutex(void *mutex);
-	virtual void unlockMutex(void *mutex);
-	uint8_t* getOffScreenFramebuffer();
-
-	void prepareGfxMode();
-	void cleanupGfxMode();
-	void switchGfxMode(bool fullscreen, uint8_t scaler);
-
-	
-};*/
-/*
-const SDLStub::Scaler SDLStub::_scalers[] = {
-	{ "Point1_tx", &SDLStub::point1_tx, 1 },
-	{ "Point2_tx", &SDLStub::point2_tx, 2 },
-	{ "Scale2x", &SDLStub::scale2x, 2 },
-	{ "Point3_tx", &SDLStub::point3_tx, 3 },
-	{ "Scale3x", &SDLStub::scale3x, 3 }
-};
-*/
-
+static void tickercb(int o, int a, int b, int c) {
+	timekeeping++; // 1 tick == 
+}
 
 void N64Stub::init(const char *title) {
-/*	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER);
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-	SDL_ShowCursor(SDL_DISABLE);
-	SDL_WM_SetCaption(title, NULL);
-
-	int x, y; 
-
-	SDL_GetMouseState( &x,&y ); 
-	SDL_ShowCursor( SDL_ENABLE ); 
-	SDL_WarpMouse( x, y ); 
-
 	memset(&input, 0, sizeof(input));
-*/	_offscreen = (uint8_t *)malloc(SCREEN_W * SCREEN_H * 2);
+
+	_offscreen = (uint8_t *)malloc(SCREEN_W * SCREEN_H * 2);
 	if (!_offscreen) {
 		error("Unable to allocate offscreen buffer");
 	}
 	_fullscreen = true;
-/*	_scaler = 1;
-	prepareGfxMode();*/
+
+	timer_init();
+	timekeeping = 0;
+		new_timer(
+		1171875,
+		TF_CONTINUOUS, 
+		0, 0, 0, 
+		tickercb
+	);
 }
 
 void N64Stub::destroy() {
-//	cleanupGfxMode();
-//	SDL_Quit();
 }
 
-uint32_t bigpal[256];
+static uint32_t bigpal[256];
 
 void N64Stub::setPalette(uint8_t start, uint8_t numEnties, const uint8_t *buf) {
 
@@ -167,7 +112,6 @@ void N64Stub::setPalette(uint8_t start, uint8_t numEnties, const uint8_t *buf) {
 	}
 
 }
-
 extern "C" void *__n64_memcpy_ASM(void *d, const void *s, size_t n);
 // special case, always fills with zero
 extern "C" void *__n64_memset_ZERO_ASM(void *ptr, int value, size_t num);
@@ -231,11 +175,7 @@ unlockVideo(_dc);
 }
 //
 // pressed_key
-// handle pressed buttons that are mapped to keyboard event operations such as
-// moving, shooting, opening doors, toggling run mode
-// also handles out-of-band input operations like toggling GOD MODE, debug display,
-// adjusting gamma correction
-//
+// handle pressed buttons that are mapped to keyboard events
 #define KEY_RETURN '\r'
 #define KEY_c 'c'
 #define KEY_p 'p'
@@ -261,16 +201,6 @@ void N64Stub::pressed_key(struct controller_data pressed_data)
     if (pressed.R)
     {
 	}
-/**
-
-case SDLK_c:
-				input.code = true;
-				break;
-			case SDLK_p:
-				input.pause = true;
-				break;
-
-**/				
     if (pressed.C_up)
     {
 		input.lastChar = KEY_c;
@@ -315,9 +245,7 @@ case SDLK_c:
 
 //
 // released_key
-// handle released buttons that are mapped to keyboard event operations such as
-// moving, shooting, opening doors, etc
-//
+// handle released buttons that are mapped to keyboard eventsvoid
 void N64Stub::released_key(struct controller_data pressed_data)
 {
     struct SI_condat pressed = pressed_data.c[0];
@@ -367,124 +295,81 @@ void N64Stub::released_key(struct controller_data pressed_data)
     {
     }
 }
+
 void N64Stub::processEvents() {
     controller_scan();
 
     struct controller_data keys_pressed = get_keys_down();
-    struct controller_data keys_held = get_keys_held();
     struct controller_data keys_released = get_keys_up();
 
     pressed_key(keys_pressed);
     released_key(keys_released);
+}
 
-/*	SDL_Event ev;
-	while(SDL_PollEvent(&ev)) {
-		switch (ev.type) {
-		case SDL_QUIT:
-			input.quit = true;
-			break;
-		case SDL_KEYUP:
-			switch(ev.key.keysym.sym) {
-			case SDLK_LEFT:
-				input.dirMask &= ~PlayerInput::DIR_LEFT;
-				break;
-			case SDLK_RIGHT:
-				input.dirMask &= ~PlayerInput::DIR_RIGHT;
-				break;
-			case SDLK_UP:
-				input.dirMask &= ~PlayerInput::DIR_UP;
-				break;
-			case SDLK_DOWN:
-				input.dirMask &= ~PlayerInput::DIR_DOWN;
-				break;
-			case SDLK_SPACE:
-			case SDLK_RETURN:
-				input.button = false;
-				break;
-			default:
-				break;
-			}
-			break;
-		case SDL_KEYDOWN:
-			if (ev.key.keysym.mod & KMOD_ALT) {
-				if (ev.key.keysym.sym == SDLK_RETURN) {
-					switchGfxMode(!_fullscreen, _scaler);
-				} else if (ev.key.keysym.sym == SDLK_KP_PLUS) {
-					uint8_t s = _scaler + 1;
-					if (s < ARRAYSIZE(_scalers)) {
-						switchGfxMode(_fullscreen, s);
-					}
-				} else if (ev.key.keysym.sym == SDLK_KP_MINUS) {
-					int8_t s = _scaler - 1;
-					if (_scaler > 0) {
-						switchGfxMode(_fullscreen, s);
-					}
-				} else if (ev.key.keysym.sym == SDLK_x) {
-					input.quit = true;
-				}
-				break;
-			} else if (ev.key.keysym.mod & KMOD_CTRL) {
-				if (ev.key.keysym.sym == SDLK_s) {
-					input.save = true;
-				} else if (ev.key.keysym.sym == SDLK_l) {
-					input.load = true;
-				} else if (ev.key.keysym.sym == SDLK_f) {
-					input.fastMode = true;
-				} else if (ev.key.keysym.sym == SDLK_KP_PLUS) {
-					input.stateSlot = 1;
-				} else if (ev.key.keysym.sym == SDLK_KP_MINUS) {
-					input.stateSlot = -1;
-				}
-				break;
-			}
-			input.lastChar = ev.key.keysym.sym;
-			switch(ev.key.keysym.sym) {
-			case SDLK_LEFT:
-				input.dirMask |= PlayerInput::DIR_LEFT;
-				break;
-			case SDLK_RIGHT:
-				input.dirMask |= PlayerInput::DIR_RIGHT;
-				break;
-			case SDLK_UP:
-				input.dirMask |= PlayerInput::DIR_UP;
-				break;
-			case SDLK_DOWN:
-				input.dirMask |= PlayerInput::DIR_DOWN;
-				break;
-			case SDLK_SPACE:
-			case SDLK_RETURN:
-				input.button = true;
-				break;
-			case SDLK_c:
-				input.code = true;
-				break;
-			case SDLK_p:
-				input.pause = true;
-				break;
-			default:
-				break;
-			}
-			break;
-		default:
-			break;
-		}
-	}
-*/}
+__attribute__((noinline))void N64Stub::sleep(uint32_t duration) {
+    const uint64_t start = getTimeStamp();
 
-void N64Stub::sleep(uint32_t duration) {
-    unsigned long start = get_ticks_ms();
-
-    while ((get_ticks_ms() - start) < duration)
+    while ((getTimeStamp() - start) < (uint64_t)duration)
     {
         ;
     }
 }
 
-uint32_t N64Stub::getTimeStamp() {
-	return get_ticks_ms();	
+volatile __attribute__((noinline)) uint32_t N64Stub::getTimeStamp() {
+	return (timekeeping * 26);	
 }
 
-void N64Stub::startAudio(AudioCallback callback, void *param) {
+extern "C" volatile struct AI_regs_s *AI_regs;// = (struct AI_regs_s *)0xa4500000;
+
+static int16_t __attribute__((aligned(8))) pcmout1[512*2] = {0}; // 1260 stereo samples
+static int16_t __attribute__((aligned(8))) pcmout2[512*2] = {0};
+int pcmflip = 0;
+int16_t* pcmout[2] = {pcmout1,pcmout2};
+int16_t* pcmbuf = pcmout1;
+extern void mix(Mixer *mxr);
+Mixer* System::mxr = 0;
+static void the_audio_callback(int o, int a, int b, int c) {
+	 
+//	disable_interrupts();
+	
+	//callback
+	
+	mix(System::mxr);
+
+	if(!(AI_regs->status & AI_STATUS_FULL)) {
+		//disable_interrupts();
+		AI_regs->address = (volatile void *)pcmbuf;//(((uint32_t)(pcmbuf) & 0x0FFFFFFF) | (uint32_t)0x80000000);//(uint32_t)0xA0000000);
+		AI_regs->length = 512*2*2;
+		AI_regs->control = 1;
+		//enable_interrupts();
+		pcmflip ^= 1;
+		pcmbuf = pcmout[pcmflip];//pcmflip ? pcmout2 : pcmout1;
+	};	
+	
+//	enable_interrupts();
+
+//	printf("tac\n"); 
+}
+
+
+
+void N64Stub::startAudio(void *param) {
+//	printf("startAudio\n");
+//	while(1) {}
+	System::mxr = (Mixer*)param;
+	audio_init(SOUND_SAMPLE_RATE, 0);
+	pcmout[0] = pcmout1;
+	pcmout[1] = pcmout2;
+	pcmbuf = pcmout[pcmflip];
+    
+	//printf("%02X %08X %08X %08X\n", pcmflip, pcmout[0], pcmout[1], pcmbuf);
+	//sleep(5000);
+	//register_AI_handler(the_audio_callback);
+    //set_AI_interrupt(1);
+	timer_link_t* akeeper = new_timer(
+	2180232,
+	TF_CONTINUOUS, 0, 0, 0, the_audio_callback);
+	
 /*	SDL_AudioSpec desired;
 	memset(&desired, 0, sizeof(desired));
 
@@ -499,7 +384,8 @@ void N64Stub::startAudio(AudioCallback callback, void *param) {
 	} else {
 		error("SDLStub::startAudio() unable to open sound device");
 	}
-*/}
+*/
+}
 
 void N64Stub::stopAudio() {
 //	SDL_CloseAudio();
@@ -509,12 +395,21 @@ uint32_t N64Stub::getOutputSampleRate() {
 	return SOUND_SAMPLE_RATE;
 }
 
+static void timer_callback(int ovfl, int param1, int param2, int param3) {
+	SfxPlayer* p = (SfxPlayer *)param3;
+//	printf("it happens\n");
+	p->handleEvents();
+	//return param1;
+}
+
 void *N64Stub::addTimer(uint32_t delay, TimerCallback callback, void *param) {
-	return (void *)0;//return SDL_AddTimer(delay, (SDL_NewTimerCallback)callback, param);
+	timer_link_t* timer = new_timer(46875*delay, TF_CONTINUOUS, delay, 0, (uintptr_t)param, timer_callback);
+	return (void *)timer;
+	//return (void*)0;
 }
 
 void N64Stub::removeTimer(void *timerId) {
-	//SDL_RemoveTimer((SDL_TimerID)timerId);
+	delete_timer((timer_link_t*)timerId);
 }
 
 void *N64Stub::createMutex() {

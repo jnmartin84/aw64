@@ -21,7 +21,7 @@
 #include "sys.h"
 extern "C" void* __n64_memset_ASM(void *a, uint8_t v, size_t s);
 
-static int8_t addclamp(int a, int b) {
+static int16_t addclamp(int a, int b) {
 	int add = a + b;
 	if (add < -128) {
 		add = -128;
@@ -29,7 +29,7 @@ static int8_t addclamp(int a, int b) {
 	else if (add > 127) {
 		add = 127;
 	}
-	return (int8_t)add;
+	return (int16_t)add;
 }
 
 Mixer::Mixer(System *stub) 
@@ -39,12 +39,12 @@ Mixer::Mixer(System *stub)
 void Mixer::init() {
 	__n64_memset_ASM(_channels, 0, sizeof(_channels));
 	//_mutex = sys->createMutex();
-	//sys->startAudio(Mixer::mixCallback, this);
+	sys->startAudio(this);
 }
 
 void Mixer::free() {
 	stopAll();
-	//sys->stopAudio();
+	sys->stopAudio();
 	//sys->destroyMutex(_mutex);
 }
 
@@ -92,21 +92,26 @@ void Mixer::stopAll() {
 // Since there is no way to know when SDL will ask for a buffer fill, we need
 // to synchronize with a mutex so the channels remain stable during the execution
 // of this method.
-void Mixer::mix(int8_t *buf, int len) {
-	int8_t *pBuf;
+extern int16_t* pcmbuf; 
 
+void mix(Mixer* mxr) {
+#if 1
+	int16_t *pBuf = pcmbuf;
+//while(1) {printf("mix");}
 //	MutexStack(sys, _mutex);
+	
+//	while(1){printf("%08X\n", pcmbuf);}
 
 	//Clear the buffer since nothing garanty we are receiving clean memory.
-	memset(buf, 0, len);
+	__n64_memset_ASM(pcmbuf, 0, 512*2*2);
 
 	for (uint8_t i = 0; i < AUDIO_NUM_CHANNELS; ++i) {
-		MixerChannel *ch = &_channels[i];
+		MixerChannel *ch = &(mxr->_channels[i]);
 		if (!ch->active) 
 			continue;
 
-		pBuf = buf;
-		for (int j = 0; j < len; ++j, ++pBuf) {
+		pBuf = pcmbuf;
+		for (int j = 0; j < 512*2; j+=2) {
 
 			uint16_t p1, p2;
 			uint16_t ilc = (ch->chunkPos & 0xFF);
@@ -135,7 +140,8 @@ void Mixer::mix(int8_t *buf, int len) {
 			int8_t b = (int8_t)((b1 * (0xFF - ilc) + b2 * ilc) >> 8);
 
 			// set volume and clamp
-			*pBuf = addclamp(*pBuf, (int)b * ch->volume / 0x40);  //0x40=64
+			pBuf[j] = addclamp(pBuf[j], (int)b * ch->volume / 0x40);  //0x40=64
+			//pBuf[j+1] = pBuf[j];
 		}
 		
 	}
@@ -143,16 +149,22 @@ void Mixer::mix(int8_t *buf, int len) {
 	// Convert signed 8-bit PCM to unsigned 8-bit PCM. The
 	// current version of SDL hangs when using signed 8-bit
 	// PCM in combination with the PulseAudio driver.
-	pBuf = buf;
-	for (int j = 0; j < len; ++j, ++pBuf) {
-		*(uint8_t *)pBuf = (*pBuf + 128);
+	pBuf = pcmbuf;
+	for (int j = 0; j < 512*2; j+=2) {
+		//pBuf[0] = 0xff;
+		//pBuf[1] = 0x00;
+		//*(uint16_t *)((uintptr_t)pBuf+0) = (*pBuf)*256;
+		//*(uint16_t *)((uintptr_t)pBuf+2) = *(uint16_t *)pBuf[0];
+		pBuf[j] *= 256;
+		pBuf[j+1] = pBuf[j];
 	}
+	#endif
 }
-
+#if 0
 void Mixer::mixCallback(void *param, uint8_t *buf, int len) {
-	((Mixer *)param)->mix((int8_t *)buf, len);
+	((Mixer *)param)->mix(/*(int8_t *)buf, len*/);
 }
-
+#endif
 void Mixer::saveOrLoad(Serializer &ser) {
 	//sys->lockMutex(_mutex);
 	for (int i = 0; i < AUDIO_NUM_CHANNELS; ++i) {
