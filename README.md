@@ -1,6 +1,10 @@
 # aw64
 nintendo 64 port of https://github.com/fabiensanglard/Another-World-Bytecode-Interpreter/
 
+# important notes
+You will need to build libsdtc++ with the no exceptions and no rtti flags, theres a toolchain script included to handle that.
+There is also a small patch needed for libdragon that I forgot about. I will add that soon.
+
 # to create a rom
 you will need
 
