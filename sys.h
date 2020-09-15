@@ -19,7 +19,6 @@
 #ifndef __SYSTEM_H__
 #define __SYSTEM_H__
 
-#include <map>
 #include <libdragon.h>
 
 #include "regsinternal.h"
@@ -57,10 +56,9 @@ struct PlayerInput {
 struct System {
 	typedef void (*AudioCallback)(void *param, uint8_t *stream, int len);
 	typedef uint32_t (*TimerCallback)(uint32_t delay, void *param);
-	
+
 	PlayerInput input;
 	static Mixer *mxr;
-	static std::map<uint32_t, SfxPlayer*> pmap;
 	virtual ~System() {}
 
 	virtual void init(const char *title) = 0;
@@ -71,15 +69,15 @@ struct System {
 
 	virtual void pressed_key(struct controller_data pressed_data) = 0;
 	virtual void released_key(struct controller_data pressed_data) = 0;
-	
+
 	virtual void processEvents() = 0;
 	virtual void sleep(uint32_t duration) = 0;
-	virtual volatile uint32_t getTimeStamp() = 0;
+	virtual uint32_t getTimeStamp() = 0;
 
 	virtual void startAudio(void *param) = 0;
 	virtual void stopAudio() = 0;
 	virtual uint32_t getOutputSampleRate() = 0;
-	
+
 	virtual void *addTimer(uint32_t delay, TimerCallback callback, void *param) = 0;
 	virtual void removeTimer(void *timerId) = 0;
 

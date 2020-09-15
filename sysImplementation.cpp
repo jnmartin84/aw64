@@ -47,7 +47,7 @@ extern "C" void *__safe_buffer[];
 static uint32_t bigpal[256];
 static uint32_t twocolorpal[256];
 static display_context_t _dc;
-static volatile uint64_t timekeeping=0;
+static uint64_t timekeeping = 0;
 
 extern "C" display_context_t lockVideo(int wait) {
 	display_context_t dc;
@@ -85,14 +85,13 @@ extern "C" void the_audio_callback(int o, int a, int b, int c) {
 }
 
 struct N64Stub : System {
-	
 	enum {
 		SCREEN_W = 320,
 		SCREEN_H = 200,
 		SOUND_SAMPLE_RATE = 11025
 	};
 	uint8_t *_offscreen;
-	
+
 	virtual ~N64Stub() {};
 	virtual void init(const char *title);
 	virtual void destroy();
@@ -102,10 +101,10 @@ struct N64Stub : System {
 	virtual void pressed_key(struct controller_data pressed_data);
 	virtual void released_key(struct controller_data pressed_data);
 	virtual void sleep(uint32_t duration);
-	virtual volatile uint32_t getTimeStamp();
+	virtual uint32_t getTimeStamp();
 	virtual void startAudio(void *param);
 	virtual void stopAudio();
-	
+
 	virtual uint32_t getOutputSampleRate();
 	virtual void *addTimer(uint32_t delay, TimerCallback callback, void *param);
 	virtual void removeTimer(void *timerId);
@@ -131,8 +130,8 @@ void N64Stub::init(const char *title) {
 	timekeeping = 0;
 		new_timer(
 		1171875,
-		TF_CONTINUOUS, 
-		0, 0, 0, 
+		TF_CONTINUOUS,
+		0, 0, 0,
 		tickercb
 	);
 }
@@ -155,7 +154,7 @@ void N64Stub::setPalette(uint8_t start, uint8_t numEnties, const uint8_t *buf) {
 	for(int i=0;i<16;i++) {
 		for(int j=0;j<16;j++) {
 			twocolorpal[((i&0xF)<<4) | (j&0xF)] = ((bigpal[i] & 0xffff) << 16) | (bigpal[j] & 0xffff);
-		}	
+		}
 	}
 }
 
@@ -166,7 +165,7 @@ void N64Stub::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, 
 
 	_dc = lockVideo(1);
 	p = &((uint32_t *)__safe_buffer[(_dc)-1])[SW * 20];
-	
+
 	//For each line
 	while (height--) {
 		//One byte gives us two pixels, we only need to iterate w/2 times.
@@ -243,7 +242,7 @@ void N64Stub::released_key(struct controller_data pressed_data) {
 
 void N64Stub::processEvents() {
 	struct controller_data keys_pressed;
-	struct controller_data keys_released; 
+	struct controller_data keys_released;
 
 	controller_scan();
 
@@ -254,7 +253,7 @@ void N64Stub::processEvents() {
 	released_key(keys_released);
 }
 
-__attribute__((noinline))void N64Stub::sleep(uint32_t duration) {
+void N64Stub::sleep(uint32_t duration) {
 	const uint64_t start = getTimeStamp();
 
 	while ((getTimeStamp() - start) < (uint64_t)duration) {
@@ -262,15 +261,13 @@ __attribute__((noinline))void N64Stub::sleep(uint32_t duration) {
 	}
 }
 
-volatile __attribute__((noinline)) uint32_t N64Stub::getTimeStamp() {
-	return (timekeeping * 29);	
+uint32_t N64Stub::getTimeStamp() {
+	return (timekeeping * 29);
 }
 
 void N64Stub::startAudio(void *param) {
 	System::mxr = (Mixer*)param;
-	AI_regs->samplesize = 7;
 	audio_init(SOUND_SAMPLE_RATE, 0);
-	AI_regs->samplesize = 15;
 	pcmout[0] = pcmout1;
 	pcmout[1] = pcmout2;
 	pcmbuf = pcmout[pcmflip];
@@ -278,14 +275,14 @@ void N64Stub::startAudio(void *param) {
 	/* timer_link_t audio_timer = */
 	new_timer(
 		// double the number of times per second that samples get generated
-		// to smooth out clicks and pops and allow for the flag to clear 
+		// to smooth out clicks and pops and allow for the flag to clear
 		// for writing more sample data to AI
-		820312<<2, 
+		820312<<2,
 		TF_CONTINUOUS,
 		// we don't use the new optional parameters for this callback
 		0, 0, 0,
 		the_audio_callback);
-}	
+}
 
 void N64Stub::stopAudio() {
 }
