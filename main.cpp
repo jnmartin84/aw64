@@ -23,54 +23,23 @@
 #include "sys.h"
 #include "util.h"
 
-
-static const char *USAGE = 
-	"Raw - Another World Interpreter\n"
-	"Usage: raw [OPTIONS]...\n"
-	"  --datapath=PATH   Path to where the game is installed (default '.')\n"
-	"  --savepath=PATH   Path to where the save files are stored (default '.')\n";
-
-static bool parseOption(const char *arg, const char *longCmd, const char **opt) {
-	bool ret = false;
-	if (arg[0] == '-' && arg[1] == '-') {
-		if (strncmp(arg + 2, longCmd, strlen(longCmd)) == 0) {
-			*opt = arg + 2 + strlen(longCmd);
-			ret = true;
-		}
-	}
-	return ret;
-}
-
 /*
 	We use here a design pattern found in Doom3:
 	An Abstract Class pointer pointing to the implementation on the Heap.
 */
-//extern System *System_SDL_create();
-extern System *stub;// = System_SDL_create();
+extern System *stub;
 
-//#undef main
-int main(/*int argc, char *argv[]*/void) {
-  init_interrupts();
+int main(void) {
+	init_interrupts();
 
     display_init(RESOLUTION_320x240, DEPTH_16_BPP, 2, GAMMA_NONE, ANTIALIAS_RESAMPLE);
 
     console_init();
     console_set_render_mode(RENDER_AUTOMATIC);
 
-#if 1
 	const char *dataPath = "";
 	const char *savePath = "";
-/*	for (int i = 1; i < argc; ++i) {
-		bool opt = false;
-		if (strlen(argv[i]) >= 2) {
-			opt |= parseOption(argv[i], "datapath=", &dataPath);
-			opt |= parseOption(argv[i], "savepath=", &savePath);
-		}
-		if (!opt) {
-			printf("%s",USAGE);
-			return 0;
-		}
-	}*/
+
 	//FCS
 	//g_debugMask = DBG_INFO; // DBG_VM | DBG_BANK | DBG_VIDEO | DBG_SER | DBG_SND
 	//g_debugMask = DBG_RES ;
@@ -80,26 +49,10 @@ int main(/*int argc, char *argv[]*/void) {
 	e->init();
 	e->run();
 
-
 	delete e;
 
-	//delete stub;
-
 	return 0;
-#endif
-#if 0
-  init_interrupts();
-
-    display_init(RESOLUTION_320x240, DEPTH_16_BPP, 2, GAMMA_NONE, ANTIALIAS_RESAMPLE);
-
-    console_init();
-    console_set_render_mode(RENDER_AUTOMATIC);
-//while(1) {printf("aaaaa\n");}
-#endif
 }
-
-
-
 
 /*
    Game was originally made with 16. SIXTEEN colors. Running on 320x200 (64,000 pixels.)

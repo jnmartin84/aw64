@@ -138,16 +138,12 @@ typedef struct rom_file_info_s
 }
 rom_file_info_t;
 
-
-// only handle MAX_FILES files
 static rom_file_info_t __attribute__((aligned(8))) files[MAX_FILES];
 static uint8_t __attribute__((aligned(8))) file_opened[MAX_FILES] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-//static int last_opened_file = -1;
 
 static uint8_t __attribute__((aligned(8))) dmaBuf[65536];
 
-
-__attribute__((noinline)) void dma_and_copy(void *buf, int count, int ROM_base_address, int current_ROM_seek)
+/*__attribute__((noinline)) */void dma_and_copy(void *buf, int count, int ROM_base_address, int current_ROM_seek)
 {
     data_cache_hit_writeback_invalidate(dmaBuf, (count + 3) & ~3);
     dma_read((void *)((uint32_t)dmaBuf & 0x1FFFFFFF), ROM_base_address + (current_ROM_seek & ~1), (count + 3) & ~3);
@@ -155,32 +151,15 @@ __attribute__((noinline)) void dma_and_copy(void *buf, int count, int ROM_base_a
     __n64_memcpy_ASM(buf, dmaBuf + (current_ROM_seek & 1), count);
 }
 
-
 long rom_tell(int fd)
 {
     if ((fd < 0) || (fd > MAX_FILES))
     {
         return -1;
     }
-
-/*	int actually_opened = 0;
-	
-    for (int i=0;i<MAX_FILES;i++)
-    {
-        if(files[i].fd == fd)
-        {
-			if(file_opened[i]) actually_opened = 1;
-		}
-    }
-	
-	if(!actually_opened)
-	{
-		return -1;
-	}*/
 	
     return files[fd].seek;
 }
-
 
 int rom_lseek(int fd, off_t offset, int whence)
 {
@@ -188,22 +167,7 @@ int rom_lseek(int fd, off_t offset, int whence)
     {
         return -1;
     }
-
-/*	int actually_opened = 0;
 	
-    for (int i=0;i<MAX_FILES;i++)
-    {
-        if(files[i].fd == fd)
-        {
-			if(file_opened[i]) actually_opened = 1;
-		}
-    }
-	
-	if(!actually_opened)
-	{
-		return -1;
-	}	
-*/	
     switch (whence)
     {
         case SEEK_SET:
@@ -228,11 +192,10 @@ int rom_lseek(int fd, off_t offset, int whence)
         }
     }
 
-    // bug-fix 2017-10-16 12:23 was return -1
     return files[fd].seek;
 }
 
-int rom_open(/*int FILE_START, */const char *name/*, int size*/, const char *mode)
+int rom_open(const char *name, const char *mode)
 {
 	int FILE_START;
 	int size;
@@ -328,33 +291,19 @@ int rom_open(/*int FILE_START, */const char *name/*, int size*/, const char *mod
 
 int rom_close(int fd)
 {
-    int i;
 	int closed_a_file = 0;
-	
 	
     if ((fd < 0) || (fd > MAX_FILES))
     {
         return -1;
     }
 
-//    for (i=0;i<MAX_FILES;i++)
- //   {
-   //     if(files[i].fd == fd)
-     //   {
-			
-            files[fd].fd = -1;
-            files[fd].rom_base = 0;
-            files[fd].size = 0;
-            files[fd].seek = 0;
-			closed_a_file = 1;
-       //     break;
-        //}
-    //}
-
-	//if(closed_a_file)
-	//{
-	    file_opened[fd] = 0;
-	//}
+    files[fd].fd = -1;
+    files[fd].rom_base = 0;
+    files[fd].size = 0;
+    files[fd].seek = 0;
+	closed_a_file = 1;
+    file_opened[fd] = 0;
 
     return 0;
 }
@@ -370,22 +319,7 @@ int rom_read(int fd, void *buf, size_t nbyte)
     {
         return -1;
     }
-
-/*	int actually_opened = 0;
 	
-    for (int i=0;i<MAX_FILES;i++)
-    {
-        if(files[i].fd == fd)
-        {
-			if(file_opened[i]) actually_opened = 1;
-		}
-    }
-	
-	if(!actually_opened)
-	{
-		return -1;
-	}
-*/	
 	ROM_base_address = files[fd].rom_base;
     current_ROM_seek = files[fd].seek;
     count            = nbyte;
@@ -403,7 +337,6 @@ int rom_read(int fd, void *buf, size_t nbyte)
 
         while (count_32K_blocks > 0)
         {
-            // read 32k, update position in buf
             actual_count = 32768;
 
             dma_and_copy(buf, actual_count, ROM_base_address, tmp_seek);

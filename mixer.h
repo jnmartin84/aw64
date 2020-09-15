@@ -42,14 +42,7 @@ struct System;
 #define AUDIO_NUM_CHANNELS 4
 
 struct Mixer {
-
-
-	void *_mutex;
 	System *sys;
-
-	// Since the virtal machine and SDL are running simultaneously in two different threads
-	// any read or write to an elements of the sound channels MUST be synchronized with a 
-	// mutex.
 	MixerChannel _channels[AUDIO_NUM_CHANNELS];
 
 	Mixer(System *stub);
@@ -60,9 +53,6 @@ struct Mixer {
 	void stopChannel(uint8_t channel);
 	void setChannelVolume(uint8_t channel, uint8_t volume);
 	void stopAll();
-	//static void mix();
-
-//	static void mixCallback(void *param, uint8_t *buf, int len);
 
 	void saveOrLoad(Serializer &ser);
 };

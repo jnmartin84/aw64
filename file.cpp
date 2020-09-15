@@ -16,12 +16,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-//#include "zlib.h"
 #include "file.h"
 
 extern long rom_tell(int fd);
 extern int rom_lseek(int fd, off_t offset, int whence);
-extern int rom_open(/*int FILE_START, */const char *name/*, int size*/, const char *mode);
+extern int rom_open(const char *name, const char *mode);
 extern int rom_close(int fd);
 extern int rom_read(int fd, void *buf, size_t nbyte);
 
@@ -36,33 +35,27 @@ struct File_impl {
 };
 
 struct stdFile : File_impl {
-//	FILE *_fp;
 	int _fp = -1;
 	stdFile() : _fp(-1) {}
 	bool open(const char *path, const char *mode) {
 		_ioErr = false;
 		_fp = rom_open(path, mode);
-        //printf("open %s %d\n", path, _fp);
 		return (_fp != -1);
 	}
 	void close() {
 		if (_fp != -1) {
-			//printf("close %d\n", _fp);
 			rom_close(_fp);
 			_fp = -1;
 		}
 	}
 	void seek(int32_t off) {
 		if (_fp != -1) {
-			//printf("seek %d %d\n", _fp, off);
 			rom_lseek(_fp, off, SEEK_SET);
 		}
 	}
 	void read(void *ptr, uint32_t size) {
-		//printf("%08X %08X %08X\n", _fp, ptr, size);
-	if (_fp !=	-1) {
+		if (_fp !=	-1) {
 			int r = rom_read(_fp, ptr, size);
-			//printf("%d = read %d %08X %d\n", r, _fp, (uint32_t)ptr, size);
 			if (r != size) {
 				_ioErr = true;
 			}
@@ -77,50 +70,9 @@ struct stdFile : File_impl {
 		}
 	}
 };
-/*
-struct zlibFile : File_impl {
-	gzFile _fp;
-	zlibFile() : _fp(0) {}
-	bool open(const char *path, const char *mode) {
-		_ioErr = false;
-		_fp = gzopen(path, mode);
-		return (_fp != NULL);
-	}
-	void close() {
-		if (_fp) {
-			gzclose(_fp);
-			_fp = 0;
-		}
-	}
-	void seek(int32_t off) {
-		if (_fp) {
-			gzseek(_fp, off, SEEK_SET);
-		}
-	}
-	void read(void *ptr, uint32_t size) {
-		if (_fp) {
-			uint32_t r = gzread(_fp, ptr, size);
-			if (r != size) {
-				_ioErr = true;
-			}
-		}
-	}
-	void write(void *ptr, uint32_t size) {
-		if (_fp) {
-			uint32_t r = gzwrite(_fp, ptr, size);
-			if (r != size) {
-				_ioErr = true;
-			}
-		}
-	}
-};*/
 
 File::File(bool gzipped) {
-//	if (gzipped) {
-//		_impl = new zlibFile;
-//	} else {
-		_impl = new stdFile;
-//	}
+	_impl = new stdFile;
 }
 
 File::~File() {
@@ -161,7 +113,6 @@ void File::read(void *ptr, uint32_t size) {
 uint8_t File::readByte() {
 	uint8_t b;
 	read(&b, 1);
-	//printf("readByte %02X\n", b);
 	return b;
 }
 
@@ -169,7 +120,6 @@ uint16_t File::readUint16BE() {
 	uint8_t hi = readByte();
 	uint8_t lo = readByte();
 	uint16_t rv = (hi << 8) | lo;
-	//printf("readUint16BE %04X\n", rv);
 	return rv;
 }
 
@@ -177,7 +127,6 @@ uint32_t File::readUint32BE() {
 	uint16_t hi = readUint16BE();
 	uint16_t lo = readUint16BE();
 	uint32_t rv = (hi << 16) | lo;
-	//printf("readUint32BE %08X\n", rv);
 	return rv;	
 }
 
