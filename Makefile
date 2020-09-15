@@ -1,4 +1,4 @@
-ROOTDIR			=$(N64_INST)
+ROOTDIR = $(N64_INST)
 GCCN64PREFIX = $(ROOTDIR)/bin/mips64-elf-
 CHKSUM64PATH = $(ROOTDIR)/bin/chksum64
 MKDFSPATH = $(ROOTDIR)/bin/mkdfs
@@ -8,7 +8,8 @@ N64TOOL = $(ROOTDIR)/bin/n64tool
 HEADERNAME = header
 
 LINK_FLAGS = -L$(ROOTDIR)/mips64-elf/lib -ldragon -lc -lm -lstdc++ -ldragonsys -lc -lm -Tn64.ld
-PROG_NAME = game
+PROG_NAME = aw
+
 CFLAGS_ASM = -g -std=gnu99 -march=vr4300 -mtune=vr4300 -Wall -G4 -Os -I$(ROOTDIR)/include -I$(ROOTDIR)/mips64-elf/include
 
 CC = $(GCCN64PREFIX)gcc
@@ -17,12 +18,11 @@ LD = $(GCCN64PREFIX)ld
 OBJCOPY = $(GCCN64PREFIX)objcopy
 OBJDUMP = $(GCCN64PREFIX)objdump
 
-#comment this line and uncomment the one below it to force detection
-#DEFINES:= -DAUTO_DETECT_PLATFORM
-DEFINES = -DSYS_BIG_ENDIAN
+# this works for combination of MIPS R4300 and DOS data file endian-ness differences
+DEFINES = -DSYS_LITTLE_ENDIAN
 
 CXX = $(GCCN64PREFIX)g++
-CXXFLAGS:= -std=c++11 -fno-rtti -fno-exceptions -march=vr4300 -mtune=vr4300 -Os -Wall -G0 -Wl,--defsym -Wl,__cxa_pure_virtual=0 -Wl,--defsym -Wl,__cxa_deleted_virtual=0 -Wundef -Wwrite-strings -Wnon-virtual-dtor -Wno-multichar -I$(ROOTDIR)/include -I$(ROOTDIR)/mips64-elf/include -fno-use-cxa-atexit
+CXXFLAGS := $(DEFINES) -std=c++11 -fno-rtti -fno-exceptions -march=vr4300 -mtune=vr4300 -Os -Wall -G0 -Wl,--defsym -Wl,__cxa_pure_virtual=0 -Wl,--defsym -Wl,__cxa_deleted_virtual=0 -Wundef -Wwrite-strings -Wnon-virtual-dtor -Wno-multichar -I$(ROOTDIR)/include -I$(ROOTDIR)/mips64-elf/include -fno-use-cxa-atexit
 
 MEMLISTBIN_OFFSET = 1048576B
 BANK01_OFFSET = 1051516B
@@ -39,9 +39,9 @@ BANK0B_OFFSET = 1981080B
 BANK0C_OFFSET = 2027376B
 BANK0D_OFFSET = 2046240B
 
-
-SRCS = exception.cpp bank.cpp file.cpp engine.cpp mixer.cpp resource.cpp parts.cpp vm.cpp \
-	serializer.cpp sfxplayer.cpp staticres.cpp util.cpp video.cpp main.cpp sysImplementation.cpp n64_rom_fs.cpp
+SRCS = bank.cpp file.cpp engine.cpp mixer.cpp resource.cpp parts.cpp vm.cpp \
+	serializer.cpp sfxplayer.cpp staticres.cpp util.cpp video.cpp main.cpp sysImplementation.cpp \
+	exception.cpp n64_rom_fs.cpp
 
 OBJS = $(SRCS:.cpp=.o)
 DEPS = $(SRCS:.cpp=.d)
@@ -49,30 +49,32 @@ DEPS = $(SRCS:.cpp=.d)
 game.z64: game.elf
 	$(OBJCOPY) game.elf game.bin -O binary
 	rm -f game.z64
-	$(N64TOOL) -l 4M                              \
-		-h $(HEADERPATH)/$(HEADERNAME)	\
-		-o game.z64 -t "game" game.bin	\
-		-s $(MEMLISTBIN_OFFSET) data/MEMLIST.BIN	\
-		-s $(BANK01_OFFSET) data/BANK01	\
-		-s $(BANK02_OFFSET) data/BANK02	\
-		-s $(BANK03_OFFSET) data/BANK03	\
-		-s $(BANK04_OFFSET) data/BANK04	\
-		-s $(BANK05_OFFSET) data/BANK05	\
-		-s $(BANK06_OFFSET) data/BANK06	\
-		-s $(BANK07_OFFSET) data/BANK07	\
-		-s $(BANK08_OFFSET) data/BANK08	\
-		-s $(BANK09_OFFSET) data/BANK09	\
-		-s $(BANK0A_OFFSET) data/BANK0A	\
-		-s $(BANK0B_OFFSET) data/BANK0B	\
-		-s $(BANK0C_OFFSET) data/BANK0C	\
-		-s $(BANK0D_OFFSET) data/BANK0D	
+	$(N64TOOL) -l 4M \
+		-h $(HEADERPATH)/$(HEADERNAME) \
+		-o game.z64 -t "game" game.bin \
+		-s $(MEMLISTBIN_OFFSET) data/MEMLIST.BIN \
+		-s $(BANK01_OFFSET) data/BANK01 \
+		-s $(BANK02_OFFSET) data/BANK02 \
+		-s $(BANK03_OFFSET) data/BANK03 \
+		-s $(BANK04_OFFSET) data/BANK04 \
+		-s $(BANK05_OFFSET) data/BANK05 \
+		-s $(BANK06_OFFSET) data/BANK06 \
+		-s $(BANK07_OFFSET) data/BANK07 \
+		-s $(BANK08_OFFSET) data/BANK08 \
+		-s $(BANK09_OFFSET) data/BANK09 \
+		-s $(BANK0A_OFFSET) data/BANK0A \
+		-s $(BANK0B_OFFSET) data/BANK0B \
+		-s $(BANK0C_OFFSET) data/BANK0C \
+		-s $(BANK0D_OFFSET) data/BANK0D
 	$(CHKSUM64PATH) game.z64
-
 
 game.elf: $(OBJS)
 	$(LD) -o game.elf n64_memcpy.o n64_memset.o $(OBJS) $(LINK_FLAGS)
-	$(OBJDUMP) -t game.elf > game_symbols.txt
-	cat game_symbols.txt | grep 'F .text' > game_functions.txt
+# uncomment these if you want to run in debugger and have references for symbols
+# all symbols
+#	$(OBJDUMP) -t game.elf > game_symbols.txt
+# just functions
+#	cat game_symbols.txt | grep 'F .text' > game_functions.txt
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -MMD -c $< -o $*.o
