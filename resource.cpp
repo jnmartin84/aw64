@@ -24,9 +24,7 @@
 #include "util.h"
 #include "parts.h"
 
-extern "C" void *__n64_memcpy_ASM(void *d, const void *s, size_t n);
 extern "C" void *__n64_memset_ASM(void *d, const void *s, size_t n);
-
 
 Resource::Resource(Video *vid, const char *dataDir) 
 	: video(vid), _dataDir(dataDir), currentPartId(0),requestedNextPart(0) {
@@ -34,19 +32,16 @@ Resource::Resource(Video *vid, const char *dataDir)
 
 void Resource::readBank(const MemEntry *me, uint8_t *dstBuf) {
 	uint16_t n = me - _memList;
-	debug(DBG_BANK, "Resource::readBank(%d)", n);
+	//debug(DBG_BANK, "Resource::readBank(%d)", n);
 
 	Bank bk(_dataDir);
 	if (!bk.read(me, dstBuf)) {
 		error("Resource::readBank() unable to unpack entry %d\n", n);
 	}
-
 }
 
-static const char *resTypeToString(unsigned int type)
-{
-	static const char* resTypes[]=
-	{
+static const char *resTypeToString(unsigned int type) {
+	static const char* resTypes[]= {
 		"RT_SOUND",
 		"RT_MUSIC",
 		"RT_POLY_ANIM",
@@ -72,7 +67,6 @@ int resourceUnitStats[7][2];
 void Resource::readEntries() {	
 	File f;
 	int resourceCounter = 0;
-	
 
 	if (!f.open("MEMLIST.BIN", _dataDir)) {
 		error("Resource::readEntries() unable to open 'memlist.bin' file\n");
@@ -86,7 +80,7 @@ void Resource::readEntries() {
 	_numMemList = 0;
 	MemEntry *memEntry = _memList;
 	while (1) {
-		assert(_numMemList < ARRAYSIZE(_memList));
+		//assert(_numMemList < ARRAYSIZE(_memList));
 		memEntry->state = f.readByte();
 		memEntry->type = f.readByte();
 		memEntry->bufPtr = 0; f.readUint16BE();
@@ -100,13 +94,11 @@ void Resource::readEntries() {
 		memEntry->size = f.readUint16BE();
 
 		//Memory tracking
-		if (memEntry->packedSize==memEntry->size)
-		{
+		if (memEntry->packedSize==memEntry->size) {
 			resourceUnitStats[memEntry->type][RES_SIZE] ++;
 			resourceUnitStats[STATS_TOTAL_SIZE][RES_SIZE] ++;
 		}
-		else
-		{
+		else {
 			resourceUnitStats[memEntry->type][RES_COMPRESSED] ++;
 			resourceUnitStats[STATS_TOTAL_SIZE][RES_COMPRESSED] ++;
 		}
@@ -116,16 +108,15 @@ void Resource::readEntries() {
 		resourceSizeStats[memEntry->type][RES_COMPRESSED] += memEntry->packedSize;
 		resourceSizeStats[STATS_TOTAL_SIZE][RES_COMPRESSED] += memEntry->packedSize;
 
-
 		if (memEntry->state == MEMENTRY_STATE_END_OF_MEMLIST) {
 			break;
 		}
 
-		debug(DBG_RES, "R:0x%02X, %-17s size=%5d (compacted gain=%2.0f%%)",
+		/*debug(DBG_RES, "R:0x%02X, %-17s size=%5d (compacted gain=%2.0f%%)",
 				resourceCounter,
 				resTypeToString(memEntry->type),
 				memEntry->size,
-				memEntry->size ? (memEntry->size-memEntry->packedSize) / (float)memEntry->size * 100.0f : 0.0f);
+				memEntry->size ? (memEntry->size-memEntry->packedSize) / (float)memEntry->size * 100.0f : 0.0f);*/
 
 		resourceCounter++;
 
@@ -133,7 +124,7 @@ void Resource::readEntries() {
 		memEntry++;
 	}
 
-	debug(DBG_RES,"\n");
+	/*debug(DBG_RES,"\n");
 	debug(DBG_RES,"Total # resources: %d",resourceCounter);
 	debug(DBG_RES,"Compressed       : %d",resourceUnitStats[STATS_TOTAL_SIZE][RES_COMPRESSED]);
 	debug(DBG_RES,"Uncompressed     : %d",resourceUnitStats[STATS_TOTAL_SIZE][RES_SIZE]);
@@ -159,7 +150,7 @@ void Resource::readEntries() {
 
 	debug(DBG_RES,"\nTotal bank files:              %d",resourceUnitStats[STATS_TOTAL_SIZE][RES_SIZE]+resourceUnitStats[STATS_TOTAL_SIZE][RES_COMPRESSED]);
 	for(int i=0 ; i < 6 ; i++)
-		debug(DBG_RES,"Total %-17s files: %3d",resTypeToString(i),resourceUnitStats[i][RES_SIZE]+resourceUnitStats[i][RES_COMPRESSED]);
+		debug(DBG_RES,"Total %-17s files: %3d",resTypeToString(i),resourceUnitStats[i][RES_SIZE]+resourceUnitStats[i][RES_COMPRESSED]);*/
 
 }
 
@@ -168,9 +159,7 @@ void Resource::readEntries() {
 	Load them in memory and mark them are MEMENTRY_STATE_LOADED
 */
 void Resource::loadMarkedAsNeeded() {
-
 	while (1) {
-		
 		MemEntry *me = NULL;
 
 		// get resource with max rankNum
@@ -188,7 +177,6 @@ void Resource::loadMarkedAsNeeded() {
 		if (me == NULL) {
 			break; // no entry found
 		}
-
 		
 		// At this point the resource descriptor should be pointed to "me"
 		// "That's what she said"
@@ -196,7 +184,8 @@ void Resource::loadMarkedAsNeeded() {
 		uint8_t *loadDestination = NULL;
 		if (me->type == RT_POLY_ANIM) {
 			loadDestination = _vidCurPtr;
-		} else {
+		} 
+		else {
 			loadDestination = _scriptCurPtr;
 			if (me->size > _vidBakPtr - _scriptCurPtr) {
 				warning("Resource::load() not enough memory");
@@ -209,8 +198,9 @@ void Resource::loadMarkedAsNeeded() {
 		if (me->bankId == 0) {
 			warning("Resource::load() ec=0x%X (me->bankId == 0)", 0xF00);
 			me->state = MEMENTRY_STATE_NOT_NEEDED;
-		} else {
-			debug(DBG_BANK, "Resource::load() bufPos=%X size=%X type=%X pos=%X bankId=%X", loadDestination - _memPtrStart, me->packedSize, me->type, me->bankOffset, me->bankId);
+		}
+		else {
+			//debug(DBG_BANK, "Resource::load() bufPos=%X size=%X type=%X pos=%X bankId=%X", loadDestination - _memPtrStart, me->packedSize, me->type, me->bankOffset, me->bankId);
 			readBank(me, loadDestination);
 			if(me->type == RT_POLY_ANIM) {
 				video->copyPagePtr(_vidCurPtr);
@@ -221,10 +211,7 @@ void Resource::loadMarkedAsNeeded() {
 				_scriptCurPtr += me->size;
 			}
 		}
-
 	}
-
-
 }
 
 void Resource::invalidateRes() {
@@ -257,13 +244,10 @@ void Resource::invalidateAll() {
 	This is decided based on the resourceId. If it does not match a mementry id it is supposed to 
 	be a part id. */
 void Resource::loadPartsOrMemoryEntry(uint16_t resourceId) {
-
 	if (resourceId > _numMemList) {
-
 		requestedNextPart = resourceId;
-
-	} else {
-
+	}
+	else {
 		MemEntry *me = &_memList[resourceId];
 
 		if (me->state == MEMENTRY_STATE_NOT_NEEDED) {
@@ -271,7 +255,6 @@ void Resource::loadPartsOrMemoryEntry(uint16_t resourceId) {
 			loadMarkedAsNeeded();
 		}
 	}
-
 }
 
 /* Protection screen and cinematic don't need the player and enemies polygon data
@@ -279,9 +262,6 @@ void Resource::loadPartsOrMemoryEntry(uint16_t resourceId) {
    needed (for action phrases) _memList[video2Index] is always loaded with 0x11 
    (as seen in memListParts). */
 void Resource::setupPart(uint16_t partId) {
-
-	
-
 	if (partId == currentPartId)
 		return;
 
@@ -291,9 +271,9 @@ void Resource::setupPart(uint16_t partId) {
 	uint16_t memListPartIndex = partId - GAME_PART_FIRST;
 
 	uint8_t paletteIndex = memListParts[memListPartIndex][MEMLIST_PART_PALETTE];
-	uint8_t codeIndex    = memListParts[memListPartIndex][MEMLIST_PART_CODE];
-	uint8_t videoCinematicIndex  = memListParts[memListPartIndex][MEMLIST_PART_POLY_CINEMATIC];
-	uint8_t video2Index  = memListParts[memListPartIndex][MEMLIST_PART_VIDEO2];
+	uint8_t codeIndex = memListParts[memListPartIndex][MEMLIST_PART_CODE];
+	uint8_t videoCinematicIndex = memListParts[memListPartIndex][MEMLIST_PART_POLY_CINEMATIC];
+	uint8_t video2Index = memListParts[memListPartIndex][MEMLIST_PART_VIDEO2];
 
 	// Mark all resources as located on harddrive.
 	invalidateAll();
@@ -307,33 +287,26 @@ void Resource::setupPart(uint16_t partId) {
 	if (video2Index != MEMLIST_PART_NONE) 
 		_memList[video2Index].state = MEMENTRY_STATE_LOAD_ME;
 	
-
 	loadMarkedAsNeeded();
-//printf("done loadMarkedAsNeeded\n");
 	segPalettes = _memList[paletteIndex].bufPtr;
-	segBytecode     = _memList[codeIndex].bufPtr;
-	segCinematic   = _memList[videoCinematicIndex].bufPtr;
-
-
+	segBytecode = _memList[codeIndex].bufPtr;
+	segCinematic = _memList[videoCinematicIndex].bufPtr;
 
 	// This is probably a cinematic or a non interactive part of the game.
 	// Player and enemy polygons are not needed.
 	if (video2Index != MEMLIST_PART_NONE) 
 		_segVideo2 = _memList[video2Index].bufPtr;
 	
-	debug(DBG_RES,"");
+	/*debug(DBG_RES,"");
 	debug(DBG_RES,"setupPart(%d)",partId-GAME_PART_FIRST);
 	debug(DBG_RES,"Loaded resource %d (%s) in segPalettes.",paletteIndex,resTypeToString(_memList[paletteIndex].type));
 	debug(DBG_RES,"Loaded resource %d (%s) in segBytecode.",codeIndex,resTypeToString(_memList[codeIndex].type));
 	debug(DBG_RES,"Loaded resource %d (%s) in segCinematic.",videoCinematicIndex,resTypeToString(_memList[videoCinematicIndex].type));
 
 	if (video2Index != MEMLIST_PART_NONE) 
-		debug(DBG_RES,"Loaded resource %d (%s) in _segVideo2.",video2Index,resTypeToString(_memList[video2Index].type));
-
-
+		debug(DBG_RES,"Loaded resource %d (%s) in _segVideo2.",video2Index,resTypeToString(_memList[video2Index].type));*/
 
 	currentPartId = partId;
-	
 
 	// _scriptCurPtr is changed in this->load();
 	_scriptBakPtr = _scriptCurPtr;	
@@ -369,7 +342,7 @@ void Resource::saveOrLoad(Serializer &ser) {
 			if (me == 0) {
 				break;
 			} else {
-				assert(p < loadedList + 64);
+				//assert(p < loadedList + 64);
 				*p++ = me - _memList;
 				q += me->size;
 			}

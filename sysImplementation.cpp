@@ -50,22 +50,22 @@ static display_context_t _dc;
 static volatile uint64_t timekeeping=0;
 
 extern "C" display_context_t lockVideo(int wait) {
-    display_context_t dc;
+	display_context_t dc;
 
-    if (wait) {
-        while (!(dc = display_lock()));
-    }
-    else {
-        dc = display_lock();
-    }
+	if (wait) {
+		while (!(dc = display_lock()));
+	}
+	else {
+		dc = display_lock();
+	}
 
-    return dc;
+	return dc;
 }
 
 extern "C" void unlockVideo(display_context_t dc) {
-    if (dc) {
-        display_show(dc);
-    }
+	if (dc) {
+		display_show(dc);
+	}
 }
 
 extern "C" void tickercb(int o, int a, int b, int c) {
@@ -73,7 +73,6 @@ extern "C" void tickercb(int o, int a, int b, int c) {
 }
 
 extern "C" void the_audio_callback(int o, int a, int b, int c) {
-	 
 	if(!(AI_regs->status & AI_STATUS_FULL)) {
 		mix(System::mxr);
 
@@ -110,10 +109,7 @@ struct N64Stub : System {
 	virtual uint32_t getOutputSampleRate();
 	virtual void *addTimer(uint32_t delay, TimerCallback callback, void *param);
 	virtual void removeTimer(void *timerId);
-	virtual void *createMutex();
-	virtual void destroyMutex(void *mutex);
-	virtual void lockMutex(void *mutex);
-	virtual void unlockMutex(void *mutex);
+
 	uint8_t* getOffScreenFramebuffer();
 
 	void prepareGfxMode();
@@ -145,9 +141,7 @@ void N64Stub::destroy() {
 }
 
 void N64Stub::setPalette(uint8_t start, uint8_t numEnties, const uint8_t *buf) {
-
-	assert(start + numEnties <= 16);
-
+	//assert(start + numEnties <= 16);
 	for (int i = start; i < start + numEnties; ++i) {
 		uint8_t c[3];
 		for (int j = 0; j < 3; j++) {
@@ -160,15 +154,15 @@ void N64Stub::setPalette(uint8_t start, uint8_t numEnties, const uint8_t *buf) {
 	// map 8 bit value to 32 bit value and skip intermediate lookups later
 	for(int i=0;i<16;i++) {
 		for(int j=0;j<16;j++) {
-			twocolorpal[((i&0xF)<<4) | j&0xF] = ((bigpal[i] & 0xffff) << 16) | (bigpal[j] & 0xffff);
+			twocolorpal[((i&0xF)<<4) | (j&0xF)] = ((bigpal[i] & 0xffff) << 16) | (bigpal[j] & 0xffff);
 		}	
 	}
 }
 
 void N64Stub::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const uint8_t *buf, uint32_t pitch) {
-	const uint32_t w = width >> 1;
+	const int w = width >> 1;
 	const uint32_t SW = SCREEN_W >> 1;
-    uint32_t *p;
+	uint32_t *p;
 
 	_dc = lockVideo(1);
 	p = &((uint32_t *)__safe_buffer[(_dc)-1])[SW * 20];
@@ -192,80 +186,80 @@ void N64Stub::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, 
 // pressed_key
 // handle pressed buttons that are mapped to keyboard events
 void N64Stub::pressed_key(struct controller_data pressed_data) {
-    struct SI_condat pressed = pressed_data.c[0];
+	struct SI_condat pressed = pressed_data.c[0];
 
-    if (pressed.A) {
+	if (pressed.A) {
 		input.lastChar = KEY_RETURN;
-		input.button = true;    
+		input.button = true;
 	}
-    if (pressed.C_up) {
+	if (pressed.C_up) {
 		input.lastChar = KEY_c;
 		input.code = true;
 	}
-    if (pressed.up) {
+	if (pressed.up) {
 		input.lastChar = KEY_up;
 		input.dirMask |= PlayerInput::DIR_UP;
-    }
-    if (pressed.down) {
+	}
+	if (pressed.down) {
 		input.lastChar = KEY_down;
 		input.dirMask |= PlayerInput::DIR_DOWN;
-    }
-    if (pressed.left) {
+	}
+	if (pressed.left) {
 		input.lastChar = KEY_left;
 		input.dirMask |= PlayerInput::DIR_LEFT;
-    }
-    if (pressed.right) {
+	}
+	if (pressed.right) {
 		input.lastChar = KEY_right;
 		input.dirMask |= PlayerInput::DIR_RIGHT;
-    }
-    if (pressed.start) {
+	}
+	if (pressed.start) {
 		input.lastChar = KEY_p;
 		input.pause = true;
-    }
+	}
 }
 
 
 // released_key
 // handle released buttons that are mapped to keyboard events
 void N64Stub::released_key(struct controller_data pressed_data) {
-    struct SI_condat pressed = pressed_data.c[0];
+	struct SI_condat pressed = pressed_data.c[0];
 
-    if (pressed.A) {
-		input.button = false;    
+	if (pressed.A) {
+		input.button = false;
 	}
-    if (pressed.up) {
+	if (pressed.up) {
 		input.dirMask &= ~PlayerInput::DIR_UP;
-    }
-    if (pressed.down) {
+	}
+	if (pressed.down) {
 		input.dirMask &= ~PlayerInput::DIR_DOWN;
-    }
-    if (pressed.left) {
+	}
+	if (pressed.left) {
 		input.dirMask &= ~PlayerInput::DIR_LEFT;
-    }
-    if (pressed.right) {
+	}
+	if (pressed.right) {
 		input.dirMask &= ~PlayerInput::DIR_RIGHT;
-    }
+	}
 }
 
 void N64Stub::processEvents() {
 	struct controller_data keys_pressed;
 	struct controller_data keys_released; 
-    
+
 	controller_scan();
 
-    keys_pressed = get_keys_down();
-    keys_released = get_keys_up();
+	keys_pressed = get_keys_down();
+	keys_released = get_keys_up();
 
-    pressed_key(keys_pressed);
-    released_key(keys_released);
+	pressed_key(keys_pressed);
+	released_key(keys_released);
 }
 
 __attribute__((noinline))void N64Stub::sleep(uint32_t duration) {
-    const uint64_t start = getTimeStamp();
+	const uint64_t start = getTimeStamp();
 
-    while ((getTimeStamp() - start) < (uint64_t)duration) {
-        ;
-    }
+	while ((getTimeStamp() - start) < (uint64_t)duration) {
+		;
+	}
 }
 
 volatile __attribute__((noinline)) uint32_t N64Stub::getTimeStamp() {
@@ -274,16 +268,24 @@ volatile __attribute__((noinline)) uint32_t N64Stub::getTimeStamp() {
 
 void N64Stub::startAudio(void *param) {
 	System::mxr = (Mixer*)param;
+	AI_regs->samplesize = 7;
 	audio_init(SOUND_SAMPLE_RATE, 0);
+	AI_regs->samplesize = 15;
 	pcmout[0] = pcmout1;
 	pcmout[1] = pcmout2;
 	pcmbuf = pcmout[pcmflip];
-    
+
+	/* timer_link_t audio_timer = */
 	new_timer(
-	820312<<2, 
-	// <<3 to match sample count, <<2 to run more often for nested mix
-	TF_CONTINUOUS, 0, 0, 0, the_audio_callback);
-}
+		// double the number of times per second that samples get generated
+		// to smooth out clicks and pops and allow for the flag to clear 
+		// for writing more sample data to AI
+		820312<<2, 
+		TF_CONTINUOUS,
+		// we don't use the new optional parameters for this callback
+		0, 0, 0,
+		the_audio_callback);
+}	
 
 void N64Stub::stopAudio() {
 }
@@ -298,29 +300,13 @@ static void timer_callback(int ovfl, int param1, int param2, int param3) {
 }
 
 void *N64Stub::addTimer(uint32_t delay, TimerCallback callback, void *param) {
+	// give "param" to libdragon timer / timer callback as new optional parameter "param3"
 	timer_link_t* timer = new_timer(46875*delay, TF_CONTINUOUS, delay, 0, (uintptr_t)param, timer_callback);
 	return (void *)timer;
 }
 
 void N64Stub::removeTimer(void *timerId) {
 	delete_timer((timer_link_t*)timerId);
-}
-
-// we only have one thread, no mutex needed
-void *N64Stub::createMutex() {
-	return (void *)0;
-}
-
-// we only have one thread, no mutex needed
-void N64Stub::destroyMutex(void *mutex) {
-}
-
-// we only have one thread, no mutex needed
-void N64Stub::lockMutex(void *mutex) {
-}
-
-// we only have one thread, no mutex needed
-void N64Stub::unlockMutex(void *mutex) {
 }
 
 void N64Stub::prepareGfxMode() {

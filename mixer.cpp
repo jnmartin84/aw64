@@ -49,9 +49,8 @@ void Mixer::free() {
 }
 
 void Mixer::playChannel(uint8_t channel, const MixerChunk *mc, uint16_t freq, uint8_t volume) {
-	debug(DBG_SND, "Mixer::playChannel(%d, %d, %d)", channel, freq, volume);
-	assert(channel < AUDIO_NUM_CHANNELS);
-
+	//debug(DBG_SND, "Mixer::playChannel(%d, %d, %d)", channel, freq, volume);
+	//assert(channel < AUDIO_NUM_CHANNELS);
 	MixerChannel *ch = &_channels[channel];
 	ch->active = true;
 	ch->volume = volume;
@@ -61,19 +60,19 @@ void Mixer::playChannel(uint8_t channel, const MixerChunk *mc, uint16_t freq, ui
 }
 
 void Mixer::stopChannel(uint8_t channel) {
-	debug(DBG_SND, "Mixer::stopChannel(%d)", channel);
-	assert(channel < AUDIO_NUM_CHANNELS);
+	//debug(DBG_SND, "Mixer::stopChannel(%d)", channel);
+	//assert(channel < AUDIO_NUM_CHANNELS);
 	_channels[channel].active = false;
 }
 
 void Mixer::setChannelVolume(uint8_t channel, uint8_t volume) {
-	debug(DBG_SND, "Mixer::setChannelVolume(%d, %d)", channel, volume);
-	assert(channel < AUDIO_NUM_CHANNELS);
+	//debug(DBG_SND, "Mixer::setChannelVolume(%d, %d)", channel, volume);
+	//assert(channel < AUDIO_NUM_CHANNELS);
 	_channels[channel].volume = volume;
 }
 
 void Mixer::stopAll() {
-	debug(DBG_SND, "Mixer::stopAll()");
+	//debug(DBG_SND, "Mixer::stopAll()");
 	for (uint8_t i = 0; i < AUDIO_NUM_CHANNELS; ++i) {
 		_channels[i].active = false;		
 	}
@@ -108,14 +107,14 @@ void mix(Mixer* mxr) {
 
 			if (ch->chunk.loopLen != 0) {
 				if (p1 == ch->chunk.loopPos + ch->chunk.loopLen - 1) {
-					debug(DBG_SND, "Looping sample on channel %d", i);
+					//debug(DBG_SND, "Looping sample on channel %d", i);
 					ch->chunkPos = p2 = ch->chunk.loopPos;
 				} else {
 					p2 = p1 + 1;
 				}
 			} else {
 				if (p1 == ch->chunk.len - 1) {
-					debug(DBG_SND, "Stopping sample on channel %d", i);
+					//debug(DBG_SND, "Stopping sample on channel %d", i);
 					ch->active = false;
 					break;
 				} else {
@@ -135,7 +134,8 @@ void mix(Mixer* mxr) {
 	// Convert signed 8-bit to signed 16-bit.
 	pBuf = pcmbuf;
 	for (int j = 0; j < 2520*2; j+=2) {
-		uint32_t pBj = ((pBuf[j] << 24) & 0xffff0000) | ((pBuf[j] << 8) & 0xffff);
+		uint8_t pbufj = pBuf[j];
+		uint32_t pBj = (pbufj << 24) | (pbufj << 8);
 		*(uint32_t*)(&pBuf[j]) = pBj;
 	}
 }

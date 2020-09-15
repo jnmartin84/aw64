@@ -17,8 +17,8 @@
  */
 
 #include <cstdarg>
-#include "util.h"
 
+#include "util.h"
 
 uint16_t g_debugMask;
 
@@ -30,34 +30,27 @@ void debug(uint16_t cm, const char *msg, ...) {
 		vsprintf(buf, msg, va);
 		va_end(va);
 		printf("%s\n", buf);
-//		fflush(stdout);
 	}
 }
 
 void error(const char *msg, ...) {
-//#if 0
 	char buf[1024];
 	va_list va;
 	va_start(va, msg);
 	vsprintf(buf, msg, va);
 	va_end(va);
-	/*f*/printf(/*stderr, */"ERROR: %s!\n", buf);
+	printf("ERROR: %s!\n", buf);
 	while(1) {}
-//	exit(-1);
-//#endif
 }
 
 void warning(const char *msg, ...) {
-//#if 0
 	char buf[1024];
 	va_list va;
 	va_start(va, msg);
 	vsprintf(buf, msg, va);
 	va_end(va);
-	/*f*/printf(/*stderr,*/ "WARNING: %s!\n", buf);
-//#endif
+	printf("WARNING: %s!\n", buf);
 }
-
 
 void string_lower(char *p) {
 	for (; *p; ++p) {

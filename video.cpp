@@ -205,8 +205,7 @@ void Video::fillPolygon(uint16_t color, uint16_t zoom, const Point &pt) {
 }
 
 /*
-    What is read from the bytecode is not a pure screnspace polygon but a polygonspace polygon.
-
+	What is read from the bytecode is not a pure screnspace polygon but a polygonspace polygon.
 */
 void Video::readAndDrawPolygonHierarchy(uint16_t zoom, const Point &pgc) {
 
@@ -267,7 +266,7 @@ void Video::drawString(uint8_t color, uint16_t x, uint16_t y, uint16_t stringId)
 		return;
 	
 
-    //Used if the string contains a return carriage.
+	//Used if the string contains a return carriage.
 	uint16_t xOrigin = x;
 	int len = strlen(se->str);
 	for (int i = 0; i < len; ++i) {
@@ -558,13 +557,13 @@ void Video::copyPagePtr(const uint8_t *src) {
 }
 
 /*
-Note: The palettes set used to be allocated on the stack but I moved it to
-      the heap so I could dump the four framebuffer and follow how
-	  frames are generated.
+	Note: The palettes set used to be allocated on the stack but I moved it to
+			the heap so I could dump the four framebuffer and follow how
+			frames are generated.
 */
 uint8_t pal[NUM_COLORS * 3]; //3 = BYTES_PER_PIXEL
-void Video::changePal(uint8_t palNum) {
 
+void Video::changePal(uint8_t palNum) {
 	if (palNum >= 32)
 		return;
 	

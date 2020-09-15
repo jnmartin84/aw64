@@ -28,50 +28,30 @@ Engine::Engine(System *paramSys, const char *dataDir, const char *saveDir)
 }
 
 void Engine::run() {
-
 	while (!sys->input.quit) {
-
 		vm.checkThreadRequests();
-
 		vm.inp_updatePlayer();
-
 		processInput();
-
 		vm.hostFrame();
 	}
-
-
 }
 
 Engine::~Engine(){
-
 	finish();
 	sys->destroy();
 }
 
-
 void Engine::init() {
-
-	
 	//Init system
 	sys->init("Out Of This World");
-
 	video.init();
-
 	res.allocMemBlock();
-
 	res.readEntries();
-
 	vm.init();
-
 	mixer.init();
-
 	player.init();
-
 	//Init virtual machine, legacy way
 	vm.initForPart(GAME_PART_FIRST); // This game part is the protection screen
-
-
 
 	// Try to cheat here. You can jump anywhere but the VM crashes afterward.
 	// Starting somewhere is probably not enough, the variables and calls return are probably missing.
@@ -108,7 +88,7 @@ void Engine::processInput() {
 		int8_t slot = _stateSlot + sys->input.stateSlot;
 		if (slot >= 0 && slot < MAX_SAVE_SLOTS) {
 			_stateSlot = slot;
-			debug(DBG_INFO, "Current game state slot is %d", _stateSlot);
+			//debug(DBG_INFO, "Current game state slot is %d", _stateSlot);
 		}
 		sys->input.stateSlot = 0;
 	}
@@ -124,7 +104,8 @@ void Engine::saveGameState(uint8_t slot, const char *desc) {
 	File f(true);
 	if (!f.open(stateFile, _saveDir, "wb")) {
 		warning("Unable to save state file '%s'", stateFile);
-	} else {
+	}
+	else {
 		// header
 		f.writeUint32BE('AWSV');
 		f.writeUint16BE(Serializer::CUR_VER);
@@ -139,11 +120,12 @@ void Engine::saveGameState(uint8_t slot, const char *desc) {
 		video.saveOrLoad(s);
 		player.saveOrLoad(s);
 		mixer.saveOrLoad(s);
-		if (f.ioErr()) {
-			warning("I/O error when saving game state");
-		} else {
-			debug(DBG_INFO, "Saved state to slot %d", _stateSlot);
-		}
+		//if (f.ioErr()) {
+		//	warning("I/O error when saving game state");
+		//}
+		//else {
+		//	debug(DBG_INFO, "Saved state to slot %d", _stateSlot);
+		//}
 	}
 }
 
@@ -152,12 +134,15 @@ void Engine::loadGameState(uint8_t slot) {
 	makeGameStateName(slot, stateFile);
 	File f(true);
 	if (!f.open(stateFile, _saveDir, "rb")) {
-		warning("Unable to open state file '%s'", stateFile);
-	} else {
+	//	warning("Unable to open state file '%s'", stateFile);
+	}
+	else {
 		uint32_t id = f.readUint32BE();
+
 		if (id != 'AWSV') {
 			warning("Bad savegame format");
-		} else {
+		}
+		else {
 			// mute
 			player.stop();
 			mixer.stopAll();
@@ -174,16 +159,16 @@ void Engine::loadGameState(uint8_t slot) {
 			player.saveOrLoad(s);
 			mixer.saveOrLoad(s);
 		}
-		if (f.ioErr()) {
-			warning("I/O error when loading game state");
-		} else {
-			debug(DBG_INFO, "Loaded state from slot %d", _stateSlot);
-		}
+		
+		//if (f.ioErr()) {
+		//	warning("I/O error when loading game state");
+		//}
+		//else {
+		//	debug(DBG_INFO, "Loaded state from slot %d", _stateSlot);
+		//}
 	}
 }
 
-
-const char* Engine::getDataDir()
-{
+const char* Engine::getDataDir() {
 	return this->_dataDir;
 }

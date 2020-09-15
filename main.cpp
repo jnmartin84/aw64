@@ -16,8 +16,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 #include <libdragon.h>
-#include <stdio.h>
-#include <string.h>
 
 #include "engine.h"
 #include "sys.h"
@@ -31,11 +29,10 @@ extern System *stub;
 
 int main(void) {
 	init_interrupts();
+	display_init(RESOLUTION_320x240, DEPTH_16_BPP, 2, GAMMA_NONE, ANTIALIAS_RESAMPLE);
 
-    display_init(RESOLUTION_320x240, DEPTH_16_BPP, 2, GAMMA_NONE, ANTIALIAS_RESAMPLE);
-
-    console_init();
-    console_set_render_mode(RENDER_AUTOMATIC);
+	console_init();
+	console_set_render_mode(RENDER_AUTOMATIC);
 
 	const char *dataPath = "";
 	const char *savePath = "";
@@ -66,36 +63,6 @@ int main(void) {
    The chronology of the game implementation can retraced via the ordering of the opcodes:
    The sound and music opcode are at the end: Music and sound was done at the end.
 
-   Call tree:
-   =========
-
-   SDLSystem       systemImplementaion ;
-   System *sys = & systemImplementaion ;
-
-   main
-   {
-       
-       Engine *e = new Engine();
-	   e->run()
-	   {
-	      sys->init("Out Of This World");
-		  setup();
-	      vm.restartAt(0x3E80); // demo starts at 0x3E81
-
-	     while (!_stub->_pi.quit) 
-		 {
-		   vm.setupScripts();
-		   vm.inp_updatePlayer();
-		    processInput();
-		   vm.runScripts();
-	     }
-
-	     finish();
-	     
-	   }
-   }
-
-
    Virtual Machine:
    ================
 
@@ -114,7 +81,6 @@ int main(void) {
 	   they also define where to find the vertices (segVideo1 or segVideo2).
 
 	   No stack available but a thread can save its pc (Program Counter) once: One method call and return is possible.
-
 
    Video :
    =======
@@ -140,14 +106,11 @@ int main(void) {
    The game engine features a "fast-mode"...what it to be able to respond to the now defunct
    TURBO button commonly found on 386/486 era PC ?!
 
-
    Endianess:
    ==========
 
    Atari and Amiga used bigEndian CPUs. Data are hence stored within BANK in big endian format.
    On an Intel or ARM CPU data will have to be transformed when read.
-
-
 
    The original codebase contained a looooot of cryptic hexa values.
    0x100 (for 256 variables)

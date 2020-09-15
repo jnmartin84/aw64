@@ -57,7 +57,6 @@ struct SfxPlayer {
 	Resource *res;
 	System *sys;
 
-	void *_mutex;
 	void *_timerId;
 	uint16_t _delay;
 	uint16_t _resNum;

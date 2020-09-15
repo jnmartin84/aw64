@@ -18,23 +18,26 @@
 
 #ifndef __SYSTEM_H__
 #define __SYSTEM_H__
+
 #include <map>
-#include "intern.h"
 #include <libdragon.h>
+
+#include "regsinternal.h"
+
+#include "intern.h"
 #include "mixer.h"
 #include "sfxplayer.h"
-#include "regsinternal.h"
+
 #define NUM_COLORS 16
 #define BYTE_PER_PIXEL 3
 #define AI_STATUS_FULL  ( 1 << 31 )
 
-
 struct PlayerInput {
 	enum {
-		DIR_LEFT  = 1 << 0,
+		DIR_LEFT = 1 << 0,
 		DIR_RIGHT = 1 << 1,
-		DIR_UP    = 1 << 2,
-		DIR_DOWN  = 1 << 3
+		DIR_UP = 1 << 2,
+		DIR_DOWN = 1 << 3
 	};
 
 	uint8_t dirMask;
@@ -80,27 +83,7 @@ struct System {
 	virtual void *addTimer(uint32_t delay, TimerCallback callback, void *param) = 0;
 	virtual void removeTimer(void *timerId) = 0;
 
-	virtual void *createMutex() = 0;
-	virtual void destroyMutex(void *mutex) = 0;
-	virtual void lockMutex(void *mutex) = 0;
-	virtual void unlockMutex(void *mutex) = 0;
-
 	virtual uint8_t* getOffScreenFramebuffer() = 0;
 };
-
-struct MutexStack {
-	System *sys;
-	void *_mutex;
-
-	MutexStack(System *stub, void *mutex) 
-		: sys(stub), _mutex(mutex) {
-		sys->lockMutex(_mutex);
-	}
-	~MutexStack() {
-		sys->unlockMutex(_mutex);
-	}
-};
-
-
 
 #endif

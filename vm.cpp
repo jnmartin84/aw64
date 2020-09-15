@@ -220,7 +220,7 @@ void VirtualMachine::op_setPalette() {
 void VirtualMachine::op_resetThread() {
 
 	uint8_t threadId = _scriptPtr.fetchByte();
-	uint8_t i =        _scriptPtr.fetchByte();
+	uint8_t i = _scriptPtr.fetchByte();
 
 	// FCS: WTF, this is cryptic as hell !!
 	//int8_t n = (i & 0x3F) - threadId;  //0x3F = 0011 1111
@@ -414,7 +414,7 @@ void VirtualMachine::initForPart(uint16_t partId) {
 }
 
 /* 
-     This is called every frames in the infinite loop.
+	This is called every frames in the infinite loop.
 */
 void VirtualMachine::checkThreadRequests() {
 
@@ -424,7 +424,6 @@ void VirtualMachine::checkThreadRequests() {
 		res->requestedNextPart = 0;
 	}
 
-	
 	// Check if a state update has been requested for any thread during the previous VM execution:
 	//      - Pause
 	//      - Jump

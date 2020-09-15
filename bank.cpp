@@ -20,13 +20,11 @@
 #include "file.h"
 #include "resource.h"
 
-
 Bank::Bank(const char *dataDir)
 	: _dataDir(dataDir) {
 }
 
 bool Bank::read(const MemEntry *me, uint8_t *buf) {
-
 	bool ret = false;
 	char bankName[10];
 	sprintf(bankName, "%02X", me->bankId);
@@ -42,7 +40,8 @@ bool Bank::read(const MemEntry *me, uint8_t *buf) {
 	if (me->packedSize == me->size) {
 		f.read(buf, me->packedSize);
 		ret = true;
-	} else {
+	}
+	else {
 		f.read(buf, me->packedSize);
 		_startBuf = buf;
 		_iBuf = buf + me->packedSize - 4;
@@ -57,8 +56,7 @@ void Bank::decUnk1(uint8_t numChunks, uint8_t addCount) {
 	//debug(DBG_BANK, "Bank::decUnk1(%d, %d) count=%d", numChunks, addCount, count);
 	_unpCtx.datasize -= count;
 	while (count--) {
-		//if(!(_oBuf >= _iBuf && _oBuf >= _startBuf)) printf("obuf %08X ?? ibuf %08X ?? startbuf %08X\n", _oBuf, _iBuf, _startBuf);
-		//assert(_oBuf >= _iBuf && _oBuf >= _startBuf);
+		assert(_oBuf >= _iBuf && _oBuf >= _startBuf);
 		*_oBuf = (uint8_t)getCode(8);
 		--_oBuf;
 	}
@@ -73,7 +71,7 @@ void Bank::decUnk2(uint8_t numChunks) {
 	//debug(DBG_BANK, "Bank::decUnk2(%d) i=%d count=%d", numChunks, i, count);
 	_unpCtx.datasize -= count;
 	while (count--) {
-		//assert(_oBuf >= _iBuf && _oBuf >= _startBuf);
+		assert(_oBuf >= _iBuf && _oBuf >= _startBuf);
 		*_oBuf = *(_oBuf + i);
 		--_oBuf;
 	}
@@ -94,43 +92,37 @@ bool Bank::unpack() {
 			_unpCtx.size = 1;
 			if (!nextChunk()) {
 				decUnk1(3, 0);
-			} else {
+			} 
+			else {
 				decUnk2(8);
 			}
 		} else {
 			uint16_t c = getCode(2);
 			if (c == 3) {
 				decUnk1(8, 8);
-			} else {
+			}
+			else {
 				if (c < 2) {
 					_unpCtx.size = c + 2;
 					decUnk2(c + 9);
-				} else {
+				}
+				else {
 					_unpCtx.size = getCode(8);
 					decUnk2(12);
 				}
 			}
 		}
 	} while (_unpCtx.datasize > 0);
+	
 	return (_unpCtx.crc == 0);
 }
 
 uint16_t Bank::getCode(uint8_t numChunks) {
 	uint16_t c = 0;
-	/*if((uint32_t)_startBuf == 0x800d613d) {
-			printf("getCode(%d)\n",numChunks);
-	}*/
 	while (numChunks--) {
 		c <<= 1;
-	/*if((uint32_t)_startBuf == 0x800d613d) {
-			printf("%d %04X\n",numChunks,c);
-	}*/
-
 		if (nextChunk()) {
 			c |= 1;
-	/*if((uint32_t)_startBuf == 0x800d613d) {
-			printf("%d %04X\n",numChunks,c);
-	}*/
 		}			
 	}
 	return c;
@@ -140,7 +132,7 @@ bool Bank::nextChunk() {
 	bool CF = rcr(false);
 	if (_unpCtx.chk == 0) {
 		//if(!(_iBuf >= _startBuf)) printf("Bank::nextChunk _iBuf %08X _startBuf %08X\n", _iBuf, _startBuf);
-		//assert(_iBuf >= _startBuf);
+		assert(_iBuf >= _startBuf);
 		_unpCtx.chk = READ_BE_UINT32(_iBuf); _iBuf -= 4;
 		_unpCtx.crc ^= _unpCtx.chk;
 		CF = rcr(true);
@@ -153,4 +145,4 @@ bool Bank::rcr(bool CF) {
 	_unpCtx.chk >>= 1;
 	if (CF) _unpCtx.chk |= 0x80000000;
 	return rCF;
-}	
+}
