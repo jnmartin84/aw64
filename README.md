@@ -8,7 +8,7 @@ you will need
 
 - n64tool.exe and chksum64.exe found in libdragon repo, and the ROM header file you'll also find in libdragon repo
 
-- data files for a PC copy of Another World / Out Of This World (MEMLIST.BIN and BANK0 files ranging from BANK01 to BANK0D)
+- data files for a PC copy of Another World / Out Of This World (MEMLIST.BIN and BANK0 files ranging from BANK01 to BANK0D), located in a subdirectory "data" under the directory containing "game.bin"
 
 - copies of the 20 Code Wheels to get past the initial copy protection screens
 
