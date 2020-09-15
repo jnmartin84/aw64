@@ -56,7 +56,7 @@ void Bank::decUnk1(uint8_t numChunks, uint8_t addCount) {
 	//debug(DBG_BANK, "Bank::decUnk1(%d, %d) count=%d", numChunks, addCount, count);
 	_unpCtx.datasize -= count;
 	while (count--) {
-		assert(_oBuf >= _iBuf && _oBuf >= _startBuf);
+		//assert(_oBuf >= _iBuf && _oBuf >= _startBuf);
 		*_oBuf = (uint8_t)getCode(8);
 		--_oBuf;
 	}
@@ -71,7 +71,7 @@ void Bank::decUnk2(uint8_t numChunks) {
 	//debug(DBG_BANK, "Bank::decUnk2(%d) i=%d count=%d", numChunks, i, count);
 	_unpCtx.datasize -= count;
 	while (count--) {
-		assert(_oBuf >= _iBuf && _oBuf >= _startBuf);
+		//assert(_oBuf >= _iBuf && _oBuf >= _startBuf);
 		*_oBuf = *(_oBuf + i);
 		--_oBuf;
 	}
@@ -131,8 +131,7 @@ uint16_t Bank::getCode(uint8_t numChunks) {
 bool Bank::nextChunk() {
 	bool CF = rcr(false);
 	if (_unpCtx.chk == 0) {
-		//if(!(_iBuf >= _startBuf)) printf("Bank::nextChunk _iBuf %08X _startBuf %08X\n", _iBuf, _startBuf);
-		assert(_iBuf >= _startBuf);
+		//assert(_iBuf >= _startBuf);
 		_unpCtx.chk = READ_BE_UINT32(_iBuf); _iBuf -= 4;
 		_unpCtx.crc ^= _unpCtx.chk;
 		CF = rcr(true);

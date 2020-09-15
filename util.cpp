@@ -22,7 +22,7 @@
 
 uint16_t g_debugMask;
 
-void debug(uint16_t cm, const char *msg, ...) {
+/*void debug(uint16_t cm, const char *msg, ...) {
 	char buf[1024];
 	if (cm & g_debugMask) {
 		va_list va;
@@ -31,7 +31,7 @@ void debug(uint16_t cm, const char *msg, ...) {
 		va_end(va);
 		printf("%s\n", buf);
 	}
-}
+}*/
 
 void error(const char *msg, ...) {
 	char buf[1024];

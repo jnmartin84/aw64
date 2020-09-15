@@ -22,7 +22,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
-#include <cassert>
+//#include <cassert>
 
 #include "endian.h"
 #include "util.h"

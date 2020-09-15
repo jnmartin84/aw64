@@ -31,7 +31,7 @@ void Polygon::readVertices(const uint8_t *p, uint16_t zoom) {
 	bbw = (*p++) * zoom / 64;
 	bbh = (*p++) * zoom / 64;
 	numPoints = *p++;
-	assert((numPoints & 1) == 0 && numPoints < MAX_POINTS);
+	//assert((numPoints & 1) == 0 && numPoints < MAX_POINTS);
 
 	//Read all points, directly from bytecode segment
 	for (int i = 0; i < numPoints; ++i) {
@@ -214,7 +214,7 @@ void Video::readAndDrawPolygonHierarchy(uint16_t zoom, const Point &pgc) {
 	pt.y -= _pData.fetchByte() * zoom / 64;
 
 	int16_t childs = _pData.fetchByte();
-	debug(DBG_VIDEO, "Video::readAndDrawPolygonHierarchy childs=%d", childs);
+	//debug(DBG_VIDEO, "Video::readAndDrawPolygonHierarchy childs=%d", childs);
 
 	for ( ; childs >= 0; --childs) {
 
@@ -259,7 +259,7 @@ void Video::drawString(uint8_t color, uint16_t x, uint16_t y, uint16_t stringId)
 	while (se->id != END_OF_STRING_DICTIONARY && se->id != stringId) 
 		++se;
 	
-	debug(DBG_VIDEO, "drawString(%d, %d, %d, '%s')", color, x, y, se->str);
+	//debug(DBG_VIDEO, "drawString(%d, %d, %d, '%s')", color, x, y, se->str);
 
 	//Not found
 	if (se->id == END_OF_STRING_DICTIONARY)
@@ -314,7 +314,7 @@ void Video::drawChar(uint8_t character, uint16_t x, uint16_t y, uint8_t color, u
 }
 
 void Video::drawPoint(uint8_t color, int16_t x, int16_t y) {
-	debug(DBG_VIDEO, "drawPoint(%d, %d, %d)", color, x, y);
+	//debug(DBG_VIDEO, "drawPoint(%d, %d, %d)", color, x, y);
 	if (x >= 0 && x <= 319 && y >= 0 && y <= 199) {
 		uint16_t off = y * 160 + x / 2;
 	
@@ -343,7 +343,7 @@ void Video::drawPoint(uint8_t color, int16_t x, int16_t y) {
 /* Blend a line in the current framebuffer (_curPagePtr1)
 */
 void Video::drawLineBlend(int16_t x1, int16_t x2, uint8_t color) {
-	debug(DBG_VIDEO, "drawLineBlend(%d, %d, %d)", x1, x2, color);
+	//debug(DBG_VIDEO, "drawLineBlend(%d, %d, %d)", x1, x2, color);
 	int16_t xmax = MAX(x1, x2);
 	int16_t xmin = MIN(x1, x2);
 	uint8_t *p = _curPagePtr1 + _hliney * 160 + xmin / 2;
@@ -377,7 +377,7 @@ void Video::drawLineBlend(int16_t x1, int16_t x2, uint8_t color) {
 }
 
 void Video::drawLineN(int16_t x1, int16_t x2, uint8_t color) {
-	debug(DBG_VIDEO, "drawLineN(%d, %d, %d)", x1, x2, color);
+	//debug(DBG_VIDEO, "drawLineN(%d, %d, %d)", x1, x2, color);
 	int16_t xmax = MAX(x1, x2);
 	int16_t xmin = MIN(x1, x2);
 	uint8_t *p = _curPagePtr1 + _hliney * 160 + xmin / 2;
@@ -411,7 +411,7 @@ void Video::drawLineN(int16_t x1, int16_t x2, uint8_t color) {
 }
 
 void Video::drawLineP(int16_t x1, int16_t x2, uint8_t color) {
-	debug(DBG_VIDEO, "drawLineP(%d, %d, %d)", x1, x2, color);
+	//debug(DBG_VIDEO, "drawLineP(%d, %d, %d)", x1, x2, color);
 	int16_t xmax = MAX(x1, x2);
 	int16_t xmin = MIN(x1, x2);
 	uint16_t off = _hliney * 160 + xmin / 2;
@@ -470,14 +470,14 @@ uint8_t *Video::getPagePtr(uint8_t page) {
 
 
 void Video::changePagePtr1(uint8_t page) {
-	debug(DBG_VIDEO, "Video::changePagePtr1(%d)", page);
+	//debug(DBG_VIDEO, "Video::changePagePtr1(%d)", page);
 	_curPagePtr1 = getPagePtr(page);
 }
 
 
 
 void Video::fillPage(uint8_t pageId, uint8_t color) {
-	debug(DBG_VIDEO, "Video::fillPage(%d, %d)", pageId, color);
+	//debug(DBG_VIDEO, "Video::fillPage(%d, %d)", pageId, color);
 	uint8_t *p = getPagePtr(pageId);
 
 	// Since a palette indice is coded on 4 bits, we need to duplicate the
@@ -494,7 +494,7 @@ void Video::fillPage(uint8_t pageId, uint8_t color) {
 	   it is copied in the current framebuffer at the start of a new frame in order to improve performances. */
 void Video::copyPage(uint8_t srcPageId, uint8_t dstPageId, int16_t vscroll) {
 
-	debug(DBG_VIDEO, "Video::copyPage(%d, %d)", srcPageId, dstPageId);
+	//debug(DBG_VIDEO, "Video::copyPage(%d, %d)", srcPageId, dstPageId);
 
 	if (srcPageId == dstPageId)
 		return;
@@ -528,7 +528,7 @@ void Video::copyPage(uint8_t srcPageId, uint8_t dstPageId, int16_t vscroll) {
 
 
 void Video::copyPagePtr(const uint8_t *src) {
-	debug(DBG_VIDEO, "Video::copyPagePtr()");
+	//debug(DBG_VIDEO, "Video::copyPagePtr()");
 	uint8_t *dst = _pagePtrs[0];
 	int h = 200;
 	while (h--) {
@@ -589,7 +589,7 @@ void Video::changePal(uint8_t palNum) {
 
 void Video::updateDisplay(uint8_t pageId) {
 
-	debug(DBG_VIDEO, "Video::updateDisplay(%d)", pageId);
+	//debug(DBG_VIDEO, "Video::updateDisplay(%d)", pageId);
 
 	if (pageId != 0xFE) {
 		if (pageId == 0xFF) {
