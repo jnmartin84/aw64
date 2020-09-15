@@ -49,32 +49,27 @@ static uint32_t twocolorpal[256];
 static display_context_t _dc;
 static volatile uint64_t timekeeping=0;
 
-extern "C" display_context_t lockVideo(int wait)
-{
+extern "C" display_context_t lockVideo(int wait) {
     display_context_t dc;
 
-    if (wait)
-    {
+    if (wait) {
         while (!(dc = display_lock()));
     }
-    else
-    {
+    else {
         dc = display_lock();
     }
 
     return dc;
 }
 
-extern "C" void unlockVideo(display_context_t dc)
-{
-    if (dc)
-    {
+extern "C" void unlockVideo(display_context_t dc) {
+    if (dc) {
         display_show(dc);
     }
 }
 
 extern "C" void tickercb(int o, int a, int b, int c) {
-	timekeeping++; // 1 tick == 25 ms
+	timekeeping++;
 }
 
 extern "C" void the_audio_callback(int o, int a, int b, int c) {
@@ -149,7 +144,6 @@ void N64Stub::init(const char *title) {
 void N64Stub::destroy() {
 }
 
-
 void N64Stub::setPalette(uint8_t start, uint8_t numEnties, const uint8_t *buf) {
 
 	assert(start + numEnties <= 16);
@@ -183,13 +177,7 @@ void N64Stub::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, 
 	while (height--) {
 		//One byte gives us two pixels, we only need to iterate w/2 times.
 		for (int i = 0; i < w; ++i) {
-			//Extract two palette indices from upper byte and lower byte.
-			//uint8_t p1 = *(buf + i) >> 4;
-			//uint8_t p2 = *(buf + i) & 0xF;
-			//Get the pixel value from the palette and write in in offScreen.
-			//p[(i*2)] = bigpal[p1];
-			//p[(i*2)+1] = bigpal[p2];
-			//uint32_t c = bigpal[p1]<<16 | bigpal[p2]&0xffff;
+			//Extract two palette indices from upper and lower 4 bits
 			p[i] = twocolorpal[*(buf + i)];
 		}
 
@@ -201,10 +189,8 @@ void N64Stub::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, 
 	unlockVideo(_dc);
 }
 
-//
 // pressed_key
 // handle pressed buttons that are mapped to keyboard events
-
 void N64Stub::pressed_key(struct controller_data pressed_data) {
     struct SI_condat pressed = pressed_data.c[0];
 
@@ -239,9 +225,8 @@ void N64Stub::pressed_key(struct controller_data pressed_data) {
 }
 
 
-//
 // released_key
-// handle released buttons that are mapped to keyboard eventsvoid
+// handle released buttons that are mapped to keyboard events
 void N64Stub::released_key(struct controller_data pressed_data) {
     struct SI_condat pressed = pressed_data.c[0];
 
@@ -278,14 +263,13 @@ void N64Stub::processEvents() {
 __attribute__((noinline))void N64Stub::sleep(uint32_t duration) {
     const uint64_t start = getTimeStamp();
 
-    while ((getTimeStamp() - start) < (uint64_t)duration)
-    {
+    while ((getTimeStamp() - start) < (uint64_t)duration) {
         ;
     }
 }
 
 volatile __attribute__((noinline)) uint32_t N64Stub::getTimeStamp() {
-	return (timekeeping * 31);	
+	return (timekeeping * 29);	
 }
 
 void N64Stub::startAudio(void *param) {
@@ -295,8 +279,9 @@ void N64Stub::startAudio(void *param) {
 	pcmout[1] = pcmout2;
 	pcmbuf = pcmout[pcmflip];
     
-	/*timer_link_t* akeeper = */new_timer(
-	820312<<2, // <<3 to match sample count, <<2 to run more often for nested mix
+	new_timer(
+	820312<<2, 
+	// <<3 to match sample count, <<2 to run more often for nested mix
 	TF_CONTINUOUS, 0, 0, 0, the_audio_callback);
 }
 
@@ -352,8 +337,7 @@ void N64Stub::switchGfxMode(bool fullscreen, uint8_t scaler) {
 	prepareGfxMode();
 }
 
-uint8_t* N64Stub::getOffScreenFramebuffer()
-{
+uint8_t* N64Stub::getOffScreenFramebuffer() {
 	return _offscreen;
 }
 

@@ -5,42 +5,7 @@
 #include <unistd.h>
 #include <libdragon.h>
 
-
-#include <_ansi.h>
-#include <ctype.h>
-#if defined (_MB_EXTENDED_CHARSETS_ISO) || defined (_MB_EXTENDED_CHARSETS_WINDOWS)
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <wctype.h>
-#include <wchar.h>
-#endif
-int rom_toupper(int c)
-{
-  return islower (c) ? c - 'a' + 'A' : c;
-}
-
-int rom_strCmp(const char* s1, const char* s2)
-{
-    while(*s1 && (*s1 == *s2))
-    {
-        s1++;
-        s2++;
-    }
-    return *(const unsigned char*)s1 - *(const unsigned char*)s2;
-}
-
-size_t rom_strlen(const char * str)
-{
-    const char *s;
-    for (s = str; *s; ++s) {}
-    return(s - str);
-}
-
 extern "C" void *__n64_memcpy_ASM(void *d, const void *s, size_t n);
-
-#define PI_BASE_REG		0x04600000
-#define PI_STATUS_REG		(PI_BASE_REG+0x10)
 
 #define MEMLIST_ROM_base	(0xB0101000)
 #define MEMLIST_size		2940
@@ -86,7 +51,6 @@ extern "C" void *__n64_memcpy_ASM(void *d, const void *s, size_t n);
 
 #define MAX_FILES               16
 
-
 const int MEMLIST_FILE = MEMLIST_ROM_base;
 const int MEMLIST_FILESIZE = MEMLIST_size;
 
@@ -129,8 +93,7 @@ const int BANK0C_FILESIZE = BANK0C_size;
 const int BANK0D_FILE = BANK0D_ROM_base;
 const int BANK0D_FILESIZE = BANK0D_size;
 
-typedef struct rom_file_info_s
-{
+typedef struct rom_file_info_s {
     int32_t fd;
     uint32_t rom_base;
     uint32_t size;
@@ -143,50 +106,40 @@ static uint8_t __attribute__((aligned(8))) file_opened[MAX_FILES] = {0,0,0,0,0,0
 
 static uint8_t __attribute__((aligned(8))) dmaBuf[65536];
 
-/*__attribute__((noinline)) */void dma_and_copy(void *buf, int count, int ROM_base_address, int current_ROM_seek)
-{
+/*__attribute__((noinline)) */void dma_and_copy(void *buf, int count, int ROM_base_address, int current_ROM_seek) {
     data_cache_hit_writeback_invalidate(dmaBuf, (count + 3) & ~3);
     dma_read((void *)((uint32_t)dmaBuf & 0x1FFFFFFF), ROM_base_address + (current_ROM_seek & ~1), (count + 3) & ~3);
     data_cache_hit_invalidate(dmaBuf, (count + 3) & ~3);
     __n64_memcpy_ASM(buf, dmaBuf + (current_ROM_seek & 1), count);
 }
 
-long rom_tell(int fd)
-{
-    if ((fd < 0) || (fd > MAX_FILES))
-    {
+long rom_tell(int fd) {
+    if ((fd < 0) || (fd > MAX_FILES)) {
         return -1;
     }
 	
     return files[fd].seek;
 }
 
-int rom_lseek(int fd, off_t offset, int whence)
-{
-    if ((fd < 0) || (fd > MAX_FILES))
-    {
+int rom_lseek(int fd, off_t offset, int whence) {
+    if ((fd < 0) || (fd > MAX_FILES)) {
         return -1;
     }
 	
-    switch (whence)
-    {
-        case SEEK_SET:
-        {
+    switch (whence) {
+        case SEEK_SET: {
             files[fd].seek = offset;
             break;
         }
-        case SEEK_CUR:
-        {
+        case SEEK_CUR: {
             files[fd].seek += offset;
             break;
         }
-        case SEEK_END:
-        {
+        case SEEK_END: {
             files[fd].seek = files[fd].size + offset;
             break;
         }
-        default:
-        {
+        default: {
             return -1;
             break;
         }
@@ -195,8 +148,7 @@ int rom_lseek(int fd, off_t offset, int whence)
     return files[fd].seek;
 }
 
-int rom_open(const char *name, const char *mode)
-{
+int rom_open(const char *name, const char *mode) {
 	int FILE_START;
 	int size;
 	
@@ -263,21 +215,17 @@ int rom_open(const char *name, const char *mode)
 		return -1;
 	}
 	
-    for (i=0;i<MAX_FILES;i++)
-    {
-        if (file_opened[i] == 0)
-        {
+    for (i=0;i<MAX_FILES;i++) {
+        if (!file_opened[i]) {
             had_open_file = 1;
             break;
         }
     }
 
-    if (!had_open_file)
-    {
+    if (!had_open_file) {
         return -1;
     }
-	else 
-	{
+	else {
 		files[i].fd       = i;
 		files[i].rom_base = FILE_START;
 		files[i].size     = size;
@@ -288,13 +236,8 @@ int rom_open(const char *name, const char *mode)
 	}
 }
 
-
-int rom_close(int fd)
-{
-	int closed_a_file = 0;
-	
-    if ((fd < 0) || (fd > MAX_FILES))
-    {
+int rom_close(int fd) {
+    if ((fd < 0) || (fd > MAX_FILES)) {
         return -1;
     }
 
@@ -302,21 +245,17 @@ int rom_close(int fd)
     files[fd].rom_base = 0;
     files[fd].size = 0;
     files[fd].seek = 0;
-	closed_a_file = 1;
-    file_opened[fd] = 0;
 
+    file_opened[fd] = 0;
     return 0;
 }
 
-
-int rom_read(int fd, void *buf, size_t nbyte)
-{
+int rom_read(int fd, void *buf, size_t nbyte) {
     int ROM_base_address = 0;
     int current_ROM_seek = 0;
     int count            = 0;
 
-    if ((fd < 0) || (fd > MAX_FILES))
-    {
+    if ((fd < 0) || (fd > MAX_FILES)) {
         return -1;
     }
 	
@@ -324,19 +263,16 @@ int rom_read(int fd, void *buf, size_t nbyte)
     current_ROM_seek = files[fd].seek;
     count            = nbyte;
 
-    if (count <= 32768)
-    {
+    if (count <= 32768) {
         dma_and_copy(buf, count, ROM_base_address, current_ROM_seek);
     }
-    else
-    {
+    else {
         int tmp_seek = current_ROM_seek;
         int count_32K_blocks = count / 32768;
         int count_bytes = count % 32768;
         int actual_count = 0;
 
-        while (count_32K_blocks > 0)
-        {
+        while (count_32K_blocks > 0) {
             actual_count = 32768;
 
             dma_and_copy(buf, actual_count, ROM_base_address, tmp_seek);
@@ -350,6 +286,7 @@ int rom_read(int fd, void *buf, size_t nbyte)
 
         dma_and_copy(buf, actual_count, ROM_base_address, tmp_seek);
     }
+
     files[fd].seek += count;
 
     return count;
