@@ -90,24 +90,24 @@ struct N64Stub : System {
 		SCREEN_H = 200,
 		SOUND_SAMPLE_RATE = 11025
 	};
-	uint8_t *_offscreen;
+	uint8_t* _offscreen;
 
 	virtual ~N64Stub() {};
 	virtual void init(const char *title);
 	virtual void destroy();
-	virtual void setPalette(uint8_t s, uint8_t n, const uint8_t *buf);
-	virtual void copyRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *buf, uint32_t pitch);
+	virtual void setPalette(uint8_t s, uint8_t n, const uint8_t* buf);
+	virtual void copyRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t* buf, uint32_t pitch);
 	virtual void processEvents();
 	virtual void pressed_key(struct controller_data pressed_data);
 	virtual void released_key(struct controller_data pressed_data);
 	virtual void sleep(uint32_t duration);
 	virtual uint32_t getTimeStamp();
-	virtual void startAudio(void *param);
+	virtual void startAudio(void* param);
 	virtual void stopAudio();
 
 	virtual uint32_t getOutputSampleRate();
-	virtual void *addTimer(uint32_t delay, TimerCallback callback, void *param);
-	virtual void removeTimer(void *timerId);
+	virtual void *addTimer(uint32_t delay, TimerCallback callback, void* param);
+	virtual void removeTimer(void* timerId);
 
 	uint8_t* getOffScreenFramebuffer();
 
@@ -117,18 +117,19 @@ struct N64Stub : System {
 };
 
 
-void N64Stub::init(const char *title) {
+void N64Stub::init(const char* title) {
 	__n64_memset_ZERO_ASM(&input, 0, sizeof(input));
 
 	// w*h*4bpp*4
-	_offscreen = (uint8_t *)malloc(SCREEN_W * SCREEN_H * 2);
+	_offscreen = (uint8_t*)malloc(SCREEN_W * SCREEN_H * 2);
 	if (!_offscreen) {
 		error("Unable to allocate offscreen buffer");
 	}
 
 	timer_init();
 	timekeeping = 0;
-		new_timer(
+	/* timer_link_t* tick_timer = */
+	new_timer(
 		1171875,
 		TF_CONTINUOUS,
 		0, 0, 0,
@@ -139,7 +140,7 @@ void N64Stub::init(const char *title) {
 void N64Stub::destroy() {
 }
 
-void N64Stub::setPalette(uint8_t start, uint8_t numEnties, const uint8_t *buf) {
+void N64Stub::setPalette(uint8_t start, uint8_t numEnties, const uint8_t* buf) {
 	//assert(start + numEnties <= 16);
 	for (int i = start; i < start + numEnties; ++i) {
 		uint8_t c[3];
@@ -158,13 +159,13 @@ void N64Stub::setPalette(uint8_t start, uint8_t numEnties, const uint8_t *buf) {
 	}
 }
 
-void N64Stub::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const uint8_t *buf, uint32_t pitch) {
+void N64Stub::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const uint8_t* buf, uint32_t pitch) {
 	const int w = width >> 1;
 	const uint32_t SW = SCREEN_W >> 1;
-	uint32_t *p;
+	uint32_t* p;
 
 	_dc = lockVideo(1);
-	p = &((uint32_t *)__safe_buffer[(_dc)-1])[SW * 20];
+	p = &((uint32_t*)__safe_buffer[(_dc)-1])[SW * 20];
 
 	//For each line
 	while (height--) {
@@ -262,7 +263,7 @@ void N64Stub::sleep(uint32_t duration) {
 }
 
 uint32_t N64Stub::getTimeStamp() {
-	return (timekeeping * 29);
+	return (timekeeping * 30);
 }
 
 void N64Stub::startAudio(void *param) {
@@ -272,7 +273,7 @@ void N64Stub::startAudio(void *param) {
 	pcmout[1] = pcmout2;
 	pcmbuf = pcmout[pcmflip];
 
-	/* timer_link_t audio_timer = */
+	/* timer_link_t* audio_timer = */
 	new_timer(
 		// double the number of times per second that samples get generated
 		// to smooth out clicks and pops and allow for the flag to clear
@@ -292,17 +293,17 @@ uint32_t N64Stub::getOutputSampleRate() {
 }
 
 static void timer_callback(int ovfl, int param1, int param2, int param3) {
-	SfxPlayer* p = (SfxPlayer *)param3;
+	SfxPlayer* p = (SfxPlayer*)param3;
 	p->handleEvents();
 }
 
-void *N64Stub::addTimer(uint32_t delay, TimerCallback callback, void *param) {
+void *N64Stub::addTimer(uint32_t delay, TimerCallback callback, void* param) {
 	// give "param" to libdragon timer / timer callback as new optional parameter "param3"
 	timer_link_t* timer = new_timer(46875*delay, TF_CONTINUOUS, delay, 0, (uintptr_t)param, timer_callback);
-	return (void *)timer;
+	return (void*)timer;
 }
 
-void N64Stub::removeTimer(void *timerId) {
+void N64Stub::removeTimer(void* timerId) {
 	delete_timer((timer_link_t*)timerId);
 }
 
@@ -325,4 +326,4 @@ uint8_t* N64Stub::getOffScreenFramebuffer() {
 }
 
 N64Stub sysImplementation;
-System *stub = &sysImplementation;
+System* stub = &sysImplementation;
