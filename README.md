@@ -34,7 +34,7 @@ path/to/n64tool.exe -l 4M                              \
 path/to/chksum64.exe game.z64
 ```
 
-where each file offset is the previous file offset + previous file size
+where each file offset is the previous file offset + previous file size and MEMLISTBIN_OFFSET is always 1048576B (1MB)
 
 for the particular set of data files I have, with the following sizes
 ```
