@@ -82,6 +82,9 @@ this will produce a playale Another World / Out Of This World ROM
 
 # controls
 dpad up/down/left/right - movement (maps to arrow keys)
+
 c button up - enter passcode (maps to 'c' key)
+
 a button - "button" button (maps to 'return' key)
+
 start button - pause (maps to 'p' key)
