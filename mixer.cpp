@@ -23,15 +23,16 @@
 extern "C" void* __n64_memset_ASM(void *a, uint8_t v, size_t s);
 extern "C" void* __n64_memset_ZERO_ASM(void *a, uint8_t v, size_t s);
 
+// originally this clamped to 8-bits but the sound is much nicer if you sum everything
+// and clamp to 16-bits and then downsample it later
 static int16_t addclamp(int a, int b) {
-	int add = a + b;
-	if (add < -128) {
-		add = -128;
-	}
-	else if (add > 127) {
-		add = 127;
-	}
-	return (int16_t)add;
+
+	if(a+b < -32768)
+		return -32768;
+	if(a+b > 32767)
+		return 32767;
+
+	return (int16_t)a+b;
 }
 
 Mixer::Mixer(System *stub) 
@@ -131,14 +132,18 @@ void mix(Mixer* mxr) {
 		}
 	}
 
-	// Convert signed 8-bit to signed 16-bit.
+	// the above mixes everything in mono
+	// ai expects stereo interleaved so first we rescale every final mixed sample
+	// and then duplicate them
+	// result is clear clipping-free audio much unlike the original code in this function
 	pBuf = pcmbuf;
 	for (int j = 0; j < 2520*2; j+=2) {
-		uint8_t pbufj = pBuf[j];
-		uint32_t pBj = (pbufj << 24) | (pbufj << 8);
+		uint16_t pbufj = pBuf[j]<<6;
+		uint32_t pBj = (pbufj << 16) | pbufj;
 		*(uint32_t*)(&pBuf[j]) = pBj;
 	}
 }
+
 void Mixer::saveOrLoad(Serializer &ser) {
 	for (int i = 0; i < AUDIO_NUM_CHANNELS; ++i) {
 		MixerChannel *ch = &_channels[i];

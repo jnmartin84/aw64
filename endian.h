@@ -21,6 +21,8 @@
 
 #include <stdint.h>
 
+// no longer supported
+#if 0
 //FCS added for windows build
 //JWS added automatic platform detection
 #if defined(AUTO_DETECT_PLATFORM)
@@ -63,8 +65,13 @@
 	#endif
 #else
 	#define SYS_BIG_ENDIAN
-#endif
+#endif //AUTO_DETECT_PLATFORM
+#endif //0
 
+#ifndef N64_PCDOS
+#error Only PC DOS data files are supported on Nintendo 64 build
+#else
+#define SYS_LITTLE_ENDIAN
 #if defined SYS_LITTLE_ENDIAN
 #warning "LITTLE ENDIAN SELECTED"
 inline uint16_t READ_BE_UINT16(const void *ptr) {
@@ -87,6 +94,7 @@ inline uint32_t READ_BE_UINT32(const void *ptr) {
 }
 #else
 #error No endianness defined
-#endif
+#endif //SYS_*_ENDIAN
+#endif //N64_PCDOS
 
-#endif
+#endif //__SYS_H__

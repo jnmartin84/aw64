@@ -10,7 +10,7 @@ HEADERNAME = header
 LINK_FLAGS = -L$(ROOTDIR)/mips64-elf/lib -ldragon -lc -lm -lstdc++ -ldragonsys -lc -lm -Tn64.ld
 PROG_NAME = aw
 
-CFLAGS_ASM = -g -std=gnu99 -march=vr4300 -mtune=vr4300 -Wall -G4 -Os -I$(ROOTDIR)/include -I$(ROOTDIR)/mips64-elf/include
+CFLAGS_ASM = -g -std=gnu99 -march=vr4300 -mtune=vr4300 -Wall -G4 -O3 -I$(ROOTDIR)/include -I$(ROOTDIR)/mips64-elf/include
 
 CC = $(GCCN64PREFIX)gcc
 AS = $(GCCN64PREFIX)as
@@ -18,11 +18,11 @@ LD = $(GCCN64PREFIX)ld
 OBJCOPY = $(GCCN64PREFIX)objcopy
 OBJDUMP = $(GCCN64PREFIX)objdump
 
-# this works for combination of MIPS R4300 and DOS data file endian-ness differences
-DEFINES = -DSYS_LITTLE_ENDIAN
+# currently only PC DOS data files are supported for Nintendo 64 port
+DEFINES = -DN64_PCDOS
 
 CXX = $(GCCN64PREFIX)g++
-CXXFLAGS := $(DEFINES) -std=c++11 -fno-rtti -fno-exceptions -march=vr4300 -mtune=vr4300 -Os -Wall -G0 -Wl,--defsym -Wl,__cxa_pure_virtual=0 -Wl,--defsym -Wl,__cxa_deleted_virtual=0 -Wundef -Wwrite-strings -Wnon-virtual-dtor -Wno-multichar -I$(ROOTDIR)/include -I$(ROOTDIR)/mips64-elf/include -fno-use-cxa-atexit
+CXXFLAGS := $(DEFINES) -std=c++11 -fno-rtti -fno-exceptions -march=vr4300 -mtune=vr4300 -O3 -Wall -G0 -Wl,--defsym -Wl,__cxa_pure_virtual=0 -Wl,--defsym -Wl,__cxa_deleted_virtual=0 -Wundef -Wwrite-strings -Wnon-virtual-dtor -Wno-multichar -I$(ROOTDIR)/include -I$(ROOTDIR)/mips64-elf/include -fno-use-cxa-atexit
 
 MEMLISTBIN_OFFSET = 1048576B
 BANK01_OFFSET = 1051516B

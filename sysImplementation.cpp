@@ -263,7 +263,7 @@ void N64Stub::sleep(uint32_t duration) {
 }
 
 uint32_t N64Stub::getTimeStamp() {
-	return (timekeeping * 30);
+	return (timekeeping * 31);
 }
 
 void N64Stub::startAudio(void *param) {
