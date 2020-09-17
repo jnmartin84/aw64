@@ -24,14 +24,8 @@ extern "C" void* __n64_memset_ASM(void *a, uint8_t v, size_t s);
 extern "C" void* __n64_memset_ZERO_ASM(void *a, uint8_t v, size_t s);
 
 // originally this clamped to 8-bits but the sound is much nicer if you sum everything
-// and clamp to 16-bits and then downsample it later
+// and then downsample it later
 static int16_t addclamp(int a, int b) {
-
-	if(a+b < -32768)
-		return -32768;
-	if(a+b > 32767)
-		return 32767;
-
 	return (int16_t)a+b;
 }
 
