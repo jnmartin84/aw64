@@ -23,15 +23,9 @@
 extern "C" void* __n64_memset_ASM(void *a, uint8_t v, size_t s);
 extern "C" void* __n64_memset_ZERO_ASM(void *a, uint8_t v, size_t s);
 
-extern int16_t* pcmbuf; 
+extern int16_t* pcmbuf;
 
-// originally this clamped to 8-bits but the sound is much nicer if you sum everything
-// to 16-bits and and then rescale it later
-static int16_t addclamp(int a, int b) {
-	return (int16_t)a+b;
-}
-
-Mixer::Mixer(System *stub) 
+Mixer::Mixer(System *stub)
 	: sys(stub) {
 }
 
@@ -71,33 +65,24 @@ void Mixer::setChannelVolume(uint8_t channel, uint8_t volume) {
 void Mixer::stopAll() {
 	//debug(DBG_SND, "Mixer::stopAll()");
 	for (uint8_t i = 0; i < AUDIO_NUM_CHANNELS; ++i) {
-		_channels[i].active = false;		
+		_channels[i].active = false;
 	}
 }
 
-// Called in order to populate the buf with len bytes.  
+// Called in order to populate the buf with len bytes.
 // The mixer iterates through all active channels and combine all sounds.
-
-int startChannel = 0;
-
 void mix(Mixer* mxr) {
 	int16_t *pBuf = pcmbuf;
 
 	//Clear the buffer since nothing garanty we are receiving clean memory.
 	__n64_memset_ZERO_ASM(pcmbuf, 0, 2520*2*2);
-
-//	for (uint8_t i = startChannel; i < startChannel+1;i++) {
-
 	for (uint8_t i = 0; i < AUDIO_NUM_CHANNELS; ++i) {
-
-//	for (uint8_t i = AUDIO_NUM_CHANNELS-1; i > 0; i--) {
 		MixerChannel *ch = &(mxr->_channels[i]);
-		if (!ch->active) 
+		if (!ch->active)
 			continue;
 
 		pBuf = pcmbuf;
 		for (int j = 0; j < 2520*2; j+=2) {
-
 			uint16_t p1, p2;
 			uint16_t ilc = (ch->chunkPos & 0xFF);
 			p1 = ch->chunkPos >> 8;
@@ -119,13 +104,13 @@ void mix(Mixer* mxr) {
 					p2 = p1 + 1;
 				}
 			}
-			// interpolate
 			int8_t b1 = *(int8_t *)(ch->chunk.data + p1);
+			// interpolate
 			//int8_t b2 = *(int8_t *)(ch->chunk.data + p2);
 			//int8_t b = (int8_t)((b1 * (0xFF - ilc) + b2 * ilc) >> 8);
 
-			// set volume and clamp
-			pBuf[j] = /*addclamp(*/(int)pBuf[j] /*,*/ + ((int)(b1) * (int)ch->volume/0x40); /*/ 0x40     //);  //0x40=64*/
+			// set volume and sum
+			pBuf[j] = (int)pBuf[j] + ((int)(b1) * (int)ch->volume/0x40);
 		}
 	}
 
@@ -135,7 +120,6 @@ void mix(Mixer* mxr) {
 	// result is clear clipping-free audio much unlike the original code in this function
 	pBuf = pcmbuf;
 	for (int j = 0; j < 2520*2; j+=2) {
-		//int16_t pbufj;
 		// 4 channels of mixed audio
 		// after summing
 		// [-128,127]*4 == [-512,511]
@@ -143,13 +127,17 @@ void mix(Mixer* mxr) {
 		// [-512,511]*64 == [-32768,32767]
 		int32_t pBj;
 		int scaledpbj = (int)pBuf[j]*64;
-		if(scaledpbj > 32767) pBj = 0x7FFF7FFF;//pbufj = 32767;
-		else if(scaledpbj < -32768) pBj = 0x80008000;//pbufj = -32768;
+
+		if(scaledpbj > 32767) {
+			pBj = 0x7FFF7FFF;
+		}
+		else if(scaledpbj < -32768) {
+			pBj = 0x80008000;
+		}
 		else {
-			//pbufj = scaledpbj;
-			//int32_t pBj = (pbufj << 16) | pbufj;
 			pBj = (scaledpbj << 16) | scaledpbj;
 		}
+
 		*(uint32_t*)(&pBuf[j]) = pBj;
 	}
 }
