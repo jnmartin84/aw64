@@ -182,7 +182,7 @@ void N64Stub::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, 
 	}
 	unlockVideo(_dc);
 }
-
+extern int startChannel;
 // pressed_key
 // handle pressed buttons that are mapped to keyboard events
 void N64Stub::pressed_key(struct controller_data pressed_data) {
@@ -216,6 +216,18 @@ void N64Stub::pressed_key(struct controller_data pressed_data) {
 		input.lastChar = KEY_p;
 		input.pause = true;
 	}
+	if (pressed.L) {
+		if(startChannel > 0)
+			startChannel--;
+		else
+			startChannel = 7;
+	}
+	if (pressed.R) {
+		if(startChannel < 7)
+			startChannel++;
+		else
+			startChannel = 0;
+	}	
 }
 
 

@@ -23,15 +23,11 @@
 extern "C" void* __n64_memset_ASM(void *a, uint8_t v, size_t s);
 extern "C" void* __n64_memset_ZERO_ASM(void *a, uint8_t v, size_t s);
 
+extern int16_t* pcmbuf; 
+
 // originally this clamped to 8-bits but the sound is much nicer if you sum everything
-// and clamp to 16-bits and then downsample it later
+// to 16-bits and and then rescale it later
 static int16_t addclamp(int a, int b) {
-
-	if(a+b < -32768)
-		return -32768;
-	if(a+b > 32767)
-		return 32767;
-
 	return (int16_t)a+b;
 }
 
@@ -82,10 +78,7 @@ void Mixer::stopAll() {
 // Called in order to populate the buf with len bytes.  
 // The mixer iterates through all active channels and combine all sounds.
 
-// Since there is no way to know when SDL will ask for a buffer fill, we need
-// to synchronize with a mutex so the channels remain stable during the execution
-// of this method.
-extern int16_t* pcmbuf; 
+int startChannel = 0;
 
 void mix(Mixer* mxr) {
 	int16_t *pBuf = pcmbuf;
@@ -93,7 +86,11 @@ void mix(Mixer* mxr) {
 	//Clear the buffer since nothing garanty we are receiving clean memory.
 	__n64_memset_ZERO_ASM(pcmbuf, 0, 2520*2*2);
 
+//	for (uint8_t i = startChannel; i < startChannel+1;i++) {
+
 	for (uint8_t i = 0; i < AUDIO_NUM_CHANNELS; ++i) {
+
+//	for (uint8_t i = AUDIO_NUM_CHANNELS-1; i > 0; i--) {
 		MixerChannel *ch = &(mxr->_channels[i]);
 		if (!ch->active) 
 			continue;
@@ -124,11 +121,11 @@ void mix(Mixer* mxr) {
 			}
 			// interpolate
 			int8_t b1 = *(int8_t *)(ch->chunk.data + p1);
-			int8_t b2 = *(int8_t *)(ch->chunk.data + p2);
-			int8_t b = (int8_t)((b1 * (0xFF - ilc) + b2 * ilc) >> 8);
+			//int8_t b2 = *(int8_t *)(ch->chunk.data + p2);
+			//int8_t b = (int8_t)((b1 * (0xFF - ilc) + b2 * ilc) >> 8);
 
 			// set volume and clamp
-			pBuf[j] = addclamp(pBuf[j], (int)b * ch->volume / 0x40);  //0x40=64
+			pBuf[j] = /*addclamp(*/(int)pBuf[j] /*,*/ + ((int)(b1) * (int)ch->volume/0x40); /*/ 0x40     //);  //0x40=64*/
 		}
 	}
 
@@ -138,8 +135,21 @@ void mix(Mixer* mxr) {
 	// result is clear clipping-free audio much unlike the original code in this function
 	pBuf = pcmbuf;
 	for (int j = 0; j < 2520*2; j+=2) {
-		uint16_t pbufj = pBuf[j]<<6;
-		uint32_t pBj = (pbufj << 16) | pbufj;
+		//int16_t pbufj;
+		// 4 channels of mixed audio
+		// after summing
+		// [-128,127]*4 == [-512,511]
+		// int16 [-32768,32767)
+		// [-512,511]*64 == [-32768,32767]
+		int32_t pBj;
+		int scaledpbj = (int)pBuf[j]*64;
+		if(scaledpbj > 32767) pBj = 0x7FFF7FFF;//pbufj = 32767;
+		else if(scaledpbj < -32768) pBj = 0x80008000;//pbufj = -32768;
+		else {
+			//pbufj = scaledpbj;
+			//int32_t pBj = (pbufj << 16) | pbufj;
+			pBj = (scaledpbj << 16) | scaledpbj;
+		}
 		*(uint32_t*)(&pBuf[j]) = pBj;
 	}
 }

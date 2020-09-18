@@ -63,9 +63,9 @@ void SfxPlayer::loadSfxModule(uint16_t resNum, uint16_t delay, uint8_t pos) {
 		_sfxMod.data = me->bufPtr + 0xC0;
 		//debug(DBG_SND, "SfxPlayer::loadSfxModule() eventDelay = %d ms", _delay);
 		prepareInstruments(me->bufPtr + 2);
-	} else {
-		warning("SfxPlayer::loadSfxModule() ec=0x%X", 0xF8);
-	}
+	} //else {
+		//warning("SfxPlayer::loadSfxModule() ec=0x%X", 0xF8);
+	//}
 }
 
 void SfxPlayer::prepareInstruments(const uint8_t *p) {
