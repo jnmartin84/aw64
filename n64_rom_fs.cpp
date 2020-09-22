@@ -7,6 +7,7 @@
 
 extern "C" void *__n64_memcpy_ASM(void *d, const void *s, size_t n);
 
+/*
 #define MEMLIST_ROM_base (0xB0101000)
 #define MEMLIST_size 2940
 
@@ -48,49 +49,50 @@ extern "C" void *__n64_memcpy_ASM(void *d, const void *s, size_t n);
 
 #define BANK0D_ROM_base (BANK0C_ROM_base + BANK0C_size)
 #define BANK0D_size 157396
+*/
 
 #define MAX_FILES 16
 
-const int MEMLIST_FILE = MEMLIST_ROM_base;
+const uint32_t MEMLIST_FILE = MEMLIST_ROM_base;
 const int MEMLIST_FILESIZE = MEMLIST_size;
 
-const int BANK01_FILE = BANK01_ROM_base;
+const uint32_t BANK01_FILE = BANK01_ROM_base;
 const int BANK01_FILESIZE = BANK01_size;
 
-const int BANK02_FILE = BANK02_ROM_base;
+const uint32_t BANK02_FILE = BANK02_ROM_base;
 const int BANK02_FILESIZE = BANK02_size;
 
-const int BANK03_FILE = BANK03_ROM_base;
+const uint32_t BANK03_FILE = BANK03_ROM_base;
 const int BANK03_FILESIZE = BANK03_size;
 
-const int BANK04_FILE = BANK04_ROM_base;
+const uint32_t BANK04_FILE = BANK04_ROM_base;
 const int BANK04_FILESIZE = BANK04_size;
 
-const int BANK05_FILE = BANK05_ROM_base;
+const uint32_t BANK05_FILE = BANK05_ROM_base;
 const int BANK05_FILESIZE = BANK05_size;
 
-const int BANK06_FILE = BANK06_ROM_base;
+const uint32_t BANK06_FILE = BANK06_ROM_base;
 const int BANK06_FILESIZE = BANK06_size;
 
-const int BANK07_FILE = BANK07_ROM_base;
+const uint32_t BANK07_FILE = BANK07_ROM_base;
 const int BANK07_FILESIZE = BANK07_size;
 
-const int BANK08_FILE = BANK08_ROM_base;
+const uint32_t BANK08_FILE = BANK08_ROM_base;
 const int BANK08_FILESIZE = BANK08_size;
 
-const int BANK09_FILE = BANK09_ROM_base;
+const uint32_t BANK09_FILE = BANK09_ROM_base;
 const int BANK09_FILESIZE = BANK09_size;
 
-const int BANK0A_FILE = BANK0A_ROM_base;
+const uint32_t BANK0A_FILE = BANK0A_ROM_base;
 const int BANK0A_FILESIZE = BANK0A_size;
 
-const int BANK0B_FILE = BANK0B_ROM_base;
+const uint32_t BANK0B_FILE = BANK0B_ROM_base;
 const int BANK0B_FILESIZE = BANK0B_size;
 
-const int BANK0C_FILE = BANK0C_ROM_base;
+const uint32_t BANK0C_FILE = BANK0C_ROM_base;
 const int BANK0C_FILESIZE = BANK0C_size;
 
-const int BANK0D_FILE = BANK0D_ROM_base;
+const uint32_t BANK0D_FILE = BANK0D_ROM_base;
 const int BANK0D_FILESIZE = BANK0D_size;
 
 typedef struct rom_file_info_s {

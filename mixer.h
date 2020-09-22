@@ -40,6 +40,10 @@ struct Serializer;
 struct System;
 
 #define AUDIO_NUM_CHANNELS 4
+#define SAMPLE_DATA_BYTES 2
+#define STEREO_MUL 2
+#define NUM_SAMPLES 2520
+#define NUM_BYTES_IN_SAMPLE_BUFFER (NUM_SAMPLES * SAMPLE_DATA_BYTES * STEREO_MUL)
 
 struct Mixer {
 	System *sys;

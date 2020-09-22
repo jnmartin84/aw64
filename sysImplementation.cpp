@@ -30,8 +30,8 @@
 #define KEY_up 82
 
 extern "C" volatile struct AI_regs_s *AI_regs;
-static int16_t __attribute__((aligned(8))) pcmout1[2520*2] = {0};
-static int16_t __attribute__((aligned(8))) pcmout2[2520*2] = {0};
+static int16_t __attribute__((aligned(8))) pcmout1[NUM_SAMPLES*STEREO_MUL] = {0};
+static int16_t __attribute__((aligned(8))) pcmout2[NUM_SAMPLES*STEREO_MUL] = {0};
 int pcmflip = 0;
 int16_t* pcmout[2] = {pcmout1,pcmout2};
 int16_t* pcmbuf = pcmout1;
@@ -77,7 +77,7 @@ extern "C" void the_audio_callback(int o, int a, int b, int c) {
 		mix(System::mxr);
 
 		AI_regs->address = (volatile void *)pcmbuf;
-		AI_regs->length = 2520*2*2;
+		AI_regs->length = NUM_BYTES_IN_SAMPLE_BUFFER;
 		AI_regs->control = 1;
 		pcmflip ^= 1;
 		pcmbuf = pcmout[pcmflip];
@@ -182,7 +182,7 @@ void N64Stub::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, 
 	}
 	unlockVideo(_dc);
 }
-
+extern int startChannel;
 // pressed_key
 // handle pressed buttons that are mapped to keyboard events
 void N64Stub::pressed_key(struct controller_data pressed_data) {
@@ -216,6 +216,18 @@ void N64Stub::pressed_key(struct controller_data pressed_data) {
 		input.lastChar = KEY_p;
 		input.pause = true;
 	}
+	if (pressed.L) {
+		if(startChannel > 0)
+			startChannel--;
+		else
+			startChannel = 7;
+	}
+	if (pressed.R) {
+		if(startChannel < 7)
+			startChannel++;
+		else
+			startChannel = 0;
+	}	
 }
 
 
