@@ -71,9 +71,6 @@ void Mixer::stopAll() {
 
 // Called in order to populate the buf with len bytes.  
 // The mixer iterates through all active channels and combine all sounds.
-
-int startChannel = 0;
-
 void mix(Mixer* mxr) {
 	int16_t *pBuf = pcmbuf;
 
@@ -87,30 +84,24 @@ void mix(Mixer* mxr) {
 
 		pBuf = pcmbuf;
 		for (int j = 0; j < NUM_SAMPLES * STEREO_MUL; j+=2) {
-			uint16_t p1, p2;
-			uint16_t ilc = (ch->chunkPos & 0xFF);
+			uint16_t p1;
 			p1 = ch->chunkPos >> 8;
 			ch->chunkPos += ch->chunkInc;
 
 			if (ch->chunk.loopLen != 0) {
 				if (p1 == ch->chunk.loopPos + ch->chunk.loopLen - 1) {
 					//debug(DBG_SND, "Looping sample on channel %d", i);
-					ch->chunkPos = p2 = ch->chunk.loopPos;
-				} else {
-					p2 = p1 + 1;
+					ch->chunkPos = ch->chunk.loopPos;
 				}
 			} else {
 				if (p1 == ch->chunk.len - 1) {
 					//debug(DBG_SND, "Stopping sample on channel %d", i);
 					ch->active = false;
 					break;
-				} else {
-					p2 = p1 + 1;
 				}
 			}
-			// interpolate
+			
 			int8_t b1 = *(int8_t *)(ch->chunk.data + p1);
-
 			// set volume and clamp
 			pBuf[j] = (int)pBuf[j] + ((int)(b1) * (int)ch->volume/0x40);
 		}
