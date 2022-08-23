@@ -21,11 +21,50 @@
 #include "serializer.h"
 #include "sys.h"
 
-extern "C" void *__n64_memcpy_ASM(void *d, const void *s, size_t n);
-// special case, always fills with zero
-extern "C" void *__n64_memset_ZERO_ASM(void *ptr, int value, size_t num);
-// the non-special case version that accepts arbitrary fill value
-extern "C" void *__n64_memset_ASM(void *ptr, int value, size_t num);
+
+#define SP_MEM_ADDR_REG 0xA4040000
+#define SP_DRAM_ADDR_REG 0xA4040004
+#define SP_RD_LEN_REG 0xA4040008
+#define SP_WR_LEN_REG 0xA404000C
+#define SP_STATUS_REG 0xA4040010
+#define SP_DMA_FULL_REG 0x04040014
+#define SP_DMA_BUSY_REG 0x04040018
+#define SP_DMA_SEM_REG 0x0404001C
+    // MIPS addresses
+    #define KSEG0 0x80000000
+    #define KSEG1 0xA0000000
+
+    // Memory translation stuff
+    #define	PHYS_TO_K1(x)       ((uint32_t)(x)|KSEG1)
+    #define	IO_WRITE(addr,data) (*(volatile uint32_t *)PHYS_TO_K1(addr)=(uint32_t)(data))
+    #define	IO_READ(addr)       (*(volatile uint32_t *)PHYS_TO_K1(addr))
+
+static inline void fast_copy(void *dest, const void *src, int n)
+{
+	if(n > 512 && 	!((((int)dest | (int)src | n) & 7))) {
+	int nblocks = n/512;
+	int nleft = n%512;
+for(int i=0;i<nblocks;i++) {
+		uint32_t regval = (/*(((blocks-1)&0x000000FF) << 12) | */(511& 0x000003FF)) & 0x000FFFFF;
+		while(IO_READ(SP_DMA_BUSY_REG) != 0) {}		// wait for DMA
+		
+		IO_WRITE(SP_MEM_ADDR_REG, 0);
+		IO_WRITE(SP_DRAM_ADDR_REG, ((uintptr_t)src | 0xA0000000) + (i*512));
+		IO_WRITE(SP_RD_LEN_REG, regval);
+
+		IO_WRITE(SP_MEM_ADDR_REG, 0);
+		IO_WRITE(SP_DRAM_ADDR_REG, ((uintptr_t)dest  | 0xA0000000) + (i*512));// + (rsp_block_size));
+		IO_WRITE(SP_WR_LEN_REG, regval);
+		
+		while(IO_READ(SP_DMA_BUSY_REG) != 0) {}		// wait for DMA
+}
+	memcpy(((void*)(((uintptr_t)dest)+(nblocks)*512)), ((void*)(((uintptr_t)src)+(nblocks)*512)), nleft);
+	}
+	else
+	{
+	memcpy(dest, src, n);
+	}
+}
 
 void Polygon::readVertices(const uint8_t *p, uint16_t zoom) {
 	bbw = (*p++) * zoom / 64;
@@ -50,7 +89,7 @@ void Video::init() {
 	paletteIdRequested = NO_PALETTE_CHANGE_REQUESTED;
 
 	uint8_t* tmp = (uint8_t *)malloc(4*VID_PAGE_SIZE);
-	__n64_memset_ASM(tmp,0,4*VID_PAGE_SIZE);
+	memset(tmp,0,4*VID_PAGE_SIZE);
 	
 	/*
 	for (int i = 0; i < 4; ++i) {
@@ -485,7 +524,7 @@ void Video::fillPage(uint8_t pageId, uint8_t color) {
 	uint8_t c = (color << 4) | color;
 
 
-	__n64_memset_ASM(p, c, VID_PAGE_SIZE);
+	memset(p, c, VID_PAGE_SIZE);
 }
 
 
@@ -505,7 +544,9 @@ void Video::copyPage(uint8_t srcPageId, uint8_t dstPageId, int16_t vscroll) {
 	if (srcPageId >= 0xFE || !((srcPageId &= 0xBF) & 0x80)) {
 		p = getPagePtr(srcPageId);
 		q = getPagePtr(dstPageId);
-		__n64_memcpy_ASM(q, p, VID_PAGE_SIZE);
+		memcpy
+		//fast_copy
+		(q, p, VID_PAGE_SIZE);
 			
 	} else {
 		p = getPagePtr(srcPageId & 3);
@@ -519,7 +560,9 @@ void Video::copyPage(uint8_t srcPageId, uint8_t dstPageId, int16_t vscroll) {
 				h -= vscroll;
 				q += vscroll * 160;
 			}
-			__n64_memcpy_ASM(q, p, h * 160);
+			memcpy
+		//fast_copy
+		(q, p, h * 160);
 		}
 	}
 }
@@ -556,6 +599,8 @@ void Video::copyPagePtr(const uint8_t *src) {
 
 }
 
+
+	
 /*
 	Note: The palettes set used to be allocated on the stack but I moved it to
 			the heap so I could dump the four framebuffer and follow how

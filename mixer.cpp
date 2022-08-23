@@ -20,8 +20,8 @@
 #include "serializer.h"
 #include "sys.h"
 
-extern "C" void* __n64_memset_ASM(void *a, uint8_t v, size_t s);
-extern "C" void* __n64_memset_ZERO_ASM(void *a, uint8_t v, size_t s);
+//extern "C" void* __n64_memset_ASM(void *a, uint8_t v, size_t s);
+//extern "C" void* __n64_memset_ZERO_ASM(void *a, uint8_t v, size_t s);
 
 extern int16_t* pcmbuf; 
 
@@ -30,7 +30,7 @@ Mixer::Mixer(System *stub)
 }
 
 void Mixer::init() {
-	__n64_memset_ZERO_ASM(_channels, 0, sizeof(_channels));
+	memset(_channels, 0, sizeof(_channels));
 	sys->startAudio(this);
 }
 
@@ -75,16 +75,17 @@ void mix(Mixer* mxr) {
 	int16_t *pBuf = pcmbuf;
 
 	//Clear the buffer since nothing garanty we are receiving clean memory.
-	__n64_memset_ZERO_ASM(pcmbuf, 0, NUM_BYTES_IN_SAMPLE_BUFFER);
+	memset(pBuf, 0, NUM_BYTES_IN_SAMPLE_BUFFER);
 
 	for (uint8_t i = 0; i < AUDIO_NUM_CHANNELS; ++i) {
 		MixerChannel *ch = &(mxr->_channels[i]);
 		if (!ch->active) 
 			continue;
 
-		pBuf = pcmbuf;
+		//pBuf = pcmbuf;
 		for (int j = 0; j < NUM_SAMPLES * STEREO_MUL; j+=2) {
-			uint16_t p1;
+#if 0
+		uint16_t p1;
 			p1 = ch->chunkPos >> 8;
 			ch->chunkPos += ch->chunkInc;
 
@@ -102,8 +103,35 @@ void mix(Mixer* mxr) {
 			}
 			
 			int8_t b1 = *(int8_t *)(ch->chunk.data + p1);
+#endif
+			uint16_t p1, p2;
+			uint16_t ilc = (ch->chunkPos & 0xFF);
+			p1 = ch->chunkPos >> 8;
+			ch->chunkPos += ch->chunkInc;
+
+			if (ch->chunk.loopLen != 0) {
+				if (p1 == ch->chunk.loopPos + ch->chunk.loopLen - 1) {
+					//debug(DBG_SND, "Looping sample on channel %d", i);
+					ch->chunkPos = p2 = ch->chunk.loopPos;
+				} else {
+					p2 = p1 + 1;
+				}
+			} else {
+				if (p1 == ch->chunk.len - 1) {
+					//debug(DBG_SND, "Stopping sample on channel %d", i);
+					ch->active = false;
+					break;
+				} else {
+					p2 = p1 + 1;
+				}
+			}
+			// interpolate
+			int8_t b1 = *(int8_t *)(ch->chunk.data + p1);
+			int8_t b2 = *(int8_t *)(ch->chunk.data + p2);
+			int8_t b = (int8_t)((b1 * (0xFF - ilc) + b2 * ilc) >> 8);
+			
 			// set volume and clamp
-			pBuf[j] = (int)pBuf[j] + ((int)(b1) * (int)ch->volume/0x40);
+			pBuf[j] = (int)pBuf[j] + (((int)(b/*1*/) * (int)ch->volume)/0x40);
 		}
 	}
 
@@ -111,22 +139,15 @@ void mix(Mixer* mxr) {
 	// ai expects stereo interleaved so first we rescale every final mixed sample
 	// and then duplicate them
 	// result is clear clipping-free audio much unlike the original code in this function
-	pBuf = pcmbuf;
+	//pBuf = pcmbuf;
 	for (int j = 0; j < NUM_SAMPLES * STEREO_MUL; j+=2) {
-		//int16_t pbufj;
 		// 4 channels of mixed audio
 		// after summing
 		// [-128,127]*4 == [-512,511]
 		// int16 [-32768,32767)
 		// [-512,511]*64 == [-32768,32767]
-		int32_t pBj;
-		int scaledpbj = (int)pBuf[j]*64;
-		if(scaledpbj > 32767) pBj = 0x7FFF7FFF;
-		else if(scaledpbj < -32768) pBj = 0x80008000;
-		else {
-			pBj = (scaledpbj << 16) | scaledpbj;
-		}
-		*(uint32_t*)(&pBuf[j]) = pBj;
+		int16_t pBufJ = pBuf[j] << 5;
+		*(uint32_t*)(&pBuf[j]) = (pBufJ<<16) | (pBufJ);
 	}
 }
 

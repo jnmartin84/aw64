@@ -27,7 +27,7 @@ Bank::Bank(const char *dataDir)
 bool Bank::read(const MemEntry *me, uint8_t *buf) {
 	bool ret = false;
 	char bankName[10];
-	sprintf(bankName, "%02X", me->bankId);
+	sprintf(bankName, "BANK%02X", me->bankId);
 	File f;
 	
 	if (!f.open(bankName, _dataDir))

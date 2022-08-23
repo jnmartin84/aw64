@@ -24,11 +24,9 @@
 #include "util.h"
 #include "parts.h"
 
-extern "C" void *__n64_memset_ASM(void *d, const void *s, size_t n);
-
 Resource::Resource(Video *vid, const char *dataDir) 
 	: video(vid), _dataDir(dataDir), currentPartId(0),requestedNextPart(0) {
-}
+}	
 
 void Resource::readBank(const MemEntry *me, uint8_t *dstBuf) {
 	uint16_t n = me - _memList;
@@ -74,8 +72,8 @@ void Resource::readEntries() {
 	}
 
 	//Prepare stats array
-	__n64_memset_ASM(resourceSizeStats,0,sizeof(resourceSizeStats));
-	__n64_memset_ASM(resourceUnitStats,0,sizeof(resourceUnitStats));
+	memset(resourceSizeStats,0,sizeof(resourceSizeStats));
+	memset(resourceUnitStats,0,sizeof(resourceUnitStats));
 
 	_numMemList = 0;
 	MemEntry *memEntry = _memList;
@@ -93,6 +91,10 @@ void Resource::readEntries() {
 		memEntry->unk10 = f.readUint16BE();
 		memEntry->size = f.readUint16BE();
 
+		if (memEntry->state == MEMENTRY_STATE_END_OF_MEMLIST) {
+			break;
+		}
+
 		//Memory tracking
 		if (memEntry->packedSize==memEntry->size) {
 			resourceUnitStats[memEntry->type][RES_SIZE] ++;
@@ -107,10 +109,6 @@ void Resource::readEntries() {
 		resourceSizeStats[STATS_TOTAL_SIZE][RES_SIZE] += memEntry->size;
 		resourceSizeStats[memEntry->type][RES_COMPRESSED] += memEntry->packedSize;
 		resourceSizeStats[STATS_TOTAL_SIZE][RES_COMPRESSED] += memEntry->packedSize;
-
-		if (memEntry->state == MEMENTRY_STATE_END_OF_MEMLIST) {
-			break;
-		}
 
 		/*debug(DBG_RES, "R:0x%02X, %-17s size=%5d (compacted gain=%2.0f%%)",
 				resourceCounter,
@@ -326,7 +324,7 @@ void Resource::freeMemBlock() {
 void Resource::saveOrLoad(Serializer &ser) {
 	uint8_t loadedList[64];
 	if (ser._mode == Serializer::SM_SAVE) {
-		__n64_memset_ASM(loadedList, 0, sizeof(loadedList));
+		memset(loadedList, 0, sizeof(loadedList));
 		uint8_t *p = loadedList;
 		uint8_t *q = _memPtrStart;
 		while (1) {

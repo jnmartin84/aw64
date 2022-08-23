@@ -29,7 +29,8 @@
 #define KEY_down 81
 #define KEY_up 82
 
-extern "C" volatile struct AI_regs_s *AI_regs;
+static volatile struct AI_regs_s *AI_regs = (struct AI_regs_s *)0xA4500000;
+
 static int16_t __attribute__((aligned(8))) pcmout1[NUM_SAMPLES*STEREO_MUL] = {0};
 static int16_t __attribute__((aligned(8))) pcmout2[NUM_SAMPLES*STEREO_MUL] = {0};
 int pcmflip = 0;
@@ -37,17 +38,13 @@ int16_t* pcmout[2] = {pcmout1,pcmout2};
 int16_t* pcmbuf = pcmout1;
 extern void mix(Mixer *mxr);
 Mixer* System::mxr = 0;
-extern "C" void *__n64_memcpy_ASM(void *d, const void *s, size_t n);
-// special case, always fills with zero
-extern "C" void *__n64_memset_ZERO_ASM(void *ptr, int value, size_t num);
-// the non-special case version that accepts arbitrary fill value
-extern "C" void *__n64_memset_ASM(void *ptr, int value, size_t num);
 extern "C" void *__safe_buffer[];
 
-static uint32_t bigpal[256];
-static uint32_t twocolorpal[256];
+static uint16_t __attribute__((aligned(8))) bigpal[256];
+static uint32_t __attribute__((aligned(8))) twocolorpal[256];
 static display_context_t _dc;
-static uint64_t timekeeping = 0;
+static volatile uint64_t timekeeping = 0;
+
 
 extern "C" display_context_t lockVideo(int wait) {
 	display_context_t dc;
@@ -68,11 +65,11 @@ extern "C" void unlockVideo(display_context_t dc) {
 	}
 }
 
-extern "C" void tickercb(int o, int a, int b, int c) {
-	timekeeping++;
+extern "C" void tickercb(int o) { //, int a, int b, int c) {
+	timekeeping+=10;
 }
 
-extern "C" void the_audio_callback(int o, int a, int b, int c) {
+extern "C" void the_audio_callback(int o) { //, int a, int b, int c) {
 	if(!(AI_regs->status & AI_STATUS_FULL)) {
 		mix(System::mxr);
 
@@ -118,7 +115,18 @@ struct N64Stub : System {
 
 
 void N64Stub::init(const char* title) {
-	__n64_memset_ZERO_ASM(&input, 0, sizeof(input));
+		console_init();
+	console_set_render_mode(RENDER_AUTOMATIC);
+	controller_init();
+	if (dfs_init( DFS_DEFAULT_LOCATION ) != DFS_ESUCCESS)
+	{
+		printf("Could not initialize filesystem!\n");
+		while(1);
+	}
+			display_init(RESOLUTION_320x240, DEPTH_16_BPP, 2, GAMMA_NONE, ANTIALIAS_RESAMPLE);
+
+
+	memset(&input, 0, sizeof(input));
 
 	// w*h*4bpp*4
 	_offscreen = (uint8_t*)malloc(SCREEN_W * SCREEN_H * 2);
@@ -130,9 +138,9 @@ void N64Stub::init(const char* title) {
 	timekeeping = 0;
 	/* timer_link_t* tick_timer = */
 	new_timer(
-		1171875,
+	// 1 millisecond tics
+		46875*10,
 		TF_CONTINUOUS,
-		0, 0, 0,
 		tickercb
 	);
 }
@@ -166,13 +174,26 @@ void N64Stub::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, 
 
 	_dc = lockVideo(1);
 	p = &((uint32_t*)__safe_buffer[(_dc)-1])[SW * 20];
-
 	//For each line
 	while (height--) {
 		//One byte gives us two pixels, we only need to iterate w/2 times.
-		for (int i = 0; i < w; ++i) {
+		for (int i = 0; i < w; i+=4) {
 			//Extract two palette indices from upper and lower 4 bits
-			p[i] = twocolorpal[*(buf + i)];
+			// 8 pixels from this read
+			uint32_t fourpixels = *((uint32_t*)((uintptr_t)buf + i));
+			uint8_t a,b,c,d;
+			a = (fourpixels >> 24)&0xff;
+			b = (fourpixels >> 16)&0xff;
+			c = (fourpixels >> 8) &0xff;
+			d = (fourpixels >> 0) &0xff;
+			// 2 pixels with this write
+			p[i+0] = twocolorpal[a];
+			// 2 pixels with this write
+			p[i+1] = twocolorpal[b];
+			// 2 pixels with this write
+			p[i+2] = twocolorpal[c];
+			// 2 pixels with this write
+			p[i+3] = twocolorpal[d];
 		}
 
 		// skip SCREEN_W 16-bit pixels
@@ -180,6 +201,7 @@ void N64Stub::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, 
 		p += SW;
 		buf += pitch;
 	}
+
 	unlockVideo(_dc);
 }
 
@@ -254,16 +276,18 @@ void N64Stub::processEvents() {
 	released_key(keys_released);
 }
 
-void N64Stub::sleep(uint32_t duration) {
-	const uint64_t start = getTimeStamp();
-
-	while ((getTimeStamp() - start) < (uint64_t)duration) {
-		;
+__attribute__ ((optimize(0))) void N64Stub::sleep(uint32_t duration) {
+	// everything is single millseconds now
+	const uint64_t start = timekeeping;
+	const uint64_t durationtk = duration;
+	while ( ((timekeeping) - start) < durationtk ) {
+		continue;
 	}
 }
 
 uint32_t N64Stub::getTimeStamp() {
-	return (timekeeping * 31);
+	// 1 tick == 1 ms
+	return (timekeeping);
 }
 
 void N64Stub::startAudio(void *param) {
@@ -278,10 +302,8 @@ void N64Stub::startAudio(void *param) {
 		// double the number of times per second that samples get generated
 		// to smooth out clicks and pops and allow for the flag to clear
 		// for writing more sample data to AI
-		820312<<2,
+		46875*124,//62,//820312*3,
 		TF_CONTINUOUS,
-		// we don't use the new optional parameters for this callback
-		0, 0, 0,
 		the_audio_callback);
 }
 
@@ -292,18 +314,27 @@ uint32_t N64Stub::getOutputSampleRate() {
 	return SOUND_SAMPLE_RATE;
 }
 
-static void timer_callback(int ovfl, int param1, int param2, int param3) {
-	SfxPlayer* p = (SfxPlayer*)param3;
+typedef struct sfx_timer_ctx_s {
+	uint32_t param1;
+	uint32_t param3;
+} sfx_timer_ctx_t;
+
+static void timer_callback(int ovfl, void *ctx) {
+	SfxPlayer* p = (SfxPlayer*)(((struct sfx_timer_ctx_s*)ctx)->param3);
 	p->handleEvents();
 }
 
 void *N64Stub::addTimer(uint32_t delay, TimerCallback callback, void* param) {
-	// give "param" to libdragon timer / timer callback as new optional parameter "param3"
-	timer_link_t* timer = new_timer(46875*delay, TF_CONTINUOUS, delay, 0, (uintptr_t)param, timer_callback);
+	struct sfx_timer_ctx_s *tctx = (struct sfx_timer_ctx_s *)malloc(sizeof(struct sfx_timer_ctx_s));
+	tctx->param1 = delay;
+	tctx->param3 = (uint32_t)param;
+	timer_link_t* timer = new_timer_context(46875*delay, TF_CONTINUOUS, timer_callback, tctx);
 	return (void*)timer;
 }
 
 void N64Stub::removeTimer(void* timerId) {
+    free(((timer_link_t*)timerId)->ctx);
+//	stop_timer((timer_link_t*)timerId);
 	delete_timer((timer_link_t*)timerId);
 }
 
@@ -319,6 +350,7 @@ void N64Stub::cleanupGfxMode() {
 
 void N64Stub::switchGfxMode(bool fullscreen, uint8_t scaler) {
 	prepareGfxMode();
+
 }
 
 uint8_t* N64Stub::getOffScreenFramebuffer() {

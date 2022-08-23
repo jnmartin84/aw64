@@ -31,14 +31,8 @@ VirtualMachine::VirtualMachine(Mixer *mix, Resource *resParameter, SfxPlayer *pl
 	: mixer(mix), res(resParameter), player(ply), video(vid), sys(stub) {
 }
 
-extern "C" void *__n64_memcpy_ASM(void *d, const void *s, size_t n);
-// special case, always fills with zero
-extern "C" void *__n64_memset_ZERO_ASM(void *ptr, int value, size_t num);
-// the non-special case version that accepts arbitrary fill value
-extern "C" void *__n64_memset_ASM(void *ptr, int value, size_t num);
-
 void VirtualMachine::init() {
-	__n64_memset_ASM(vmVariables, 0, sizeof(vmVariables));
+	memset(vmVariables, 0, sizeof(vmVariables));
 	vmVariables[0x54] = 0x81;
 	vmVariables[VM_VARIABLE_RANDOM_SEED] = time(0);
 
@@ -415,10 +409,10 @@ void VirtualMachine::initForPart(uint16_t partId) {
 	res->setupPart(partId);
 
 	//Set all thread to inactive (pc at 0xFFFF or 0xFFFE )
-	__n64_memset_ASM((uint8_t *)threadsData, 0xFF, sizeof(threadsData));
+	memset((uint8_t *)threadsData, 0xFF, sizeof(threadsData));
 
 
-	__n64_memset_ASM((uint8_t *)vmIsChannelActive, 0, sizeof(vmIsChannelActive));
+	memset((uint8_t *)vmIsChannelActive, 0, sizeof(vmIsChannelActive));
 	
 	int firstThreadId = 0;
 	threadsData[PC_OFFSET][firstThreadId] = 0;	
@@ -704,7 +698,7 @@ void VirtualMachine::snd_playSound(uint16_t resNum, uint8_t freq, uint8_t vol, u
 		mixer->stopChannel(channel);
 	} else {
 		MixerChunk mc;
-		__n64_memset_ASM(&mc, 0, sizeof(mc));
+		memset(&mc, 0, sizeof(mc));
 		mc.data = me->bufPtr + 8; // skip header
 		mc.len = READ_BE_UINT16(me->bufPtr) * 2;
 		mc.loopLen = READ_BE_UINT16(me->bufPtr + 2) * 2;

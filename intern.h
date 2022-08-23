@@ -46,8 +46,8 @@ struct Ptr {
 	}
 	
 	uint16_t fetchWord() {
-		uint16_t i = READ_BE_UINT16(pc);
-		pc += 2;
+		uint16_t i = fetchByte()<<8 | fetchByte();//READ_BE_UINT16(pc);
+//		pc += 2;
 		return i;
 	}
 };

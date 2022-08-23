@@ -17,16 +17,12 @@
  */
 
 #include "file.h"
-
-extern long rom_tell(int fd);
-extern int rom_lseek(int fd, off_t offset, int whence);
-extern int rom_open(const char *name, const char *mode);
-extern int rom_close(int fd);
-extern int rom_read(int fd, void *buf, size_t nbyte);
+#include <libdragon.h>
 
 struct File_impl {
 	bool _ioErr;
 	File_impl() : _ioErr(false) {}
+	virtual ~File_impl() {}
 	virtual bool open(const char *path, const char *mode) = 0;
 	virtual void close() = 0;
 	virtual void seek(int32_t off) = 0;
@@ -39,23 +35,23 @@ struct stdFile : File_impl {
 	stdFile() : _fp(-1) {}
 	bool open(const char *path, const char *mode) {
 		_ioErr = false;
-		_fp = rom_open(path, mode);
+		_fp = dfs_open(path);//, mode);
 		return (_fp != -1);
 	}
 	void close() {
 		if (_fp != -1) {
-			rom_close(_fp);
+			dfs_close(_fp);
 			_fp = -1;
 		}
 	}
 	void seek(int32_t off) {
 		if (_fp != -1) {
-			rom_lseek(_fp, off, SEEK_SET);
+			dfs_seek(_fp, off, SEEK_SET);
 		}
 	}
 	void read(void *ptr, uint32_t size) {
 		if (_fp !=	-1) {
-			int r = rom_read(_fp, ptr, size);
+			size_t r = dfs_read(ptr, size, 1, _fp);
 			if (r != size) {
 				_ioErr = true;
 			}
@@ -63,7 +59,7 @@ struct stdFile : File_impl {
 	}
 	void write(void *ptr, uint32_t size) {
 		if (_fp != -1) {
-			uint32_t r = size;//0;//fwrite(ptr, 1, size, _fp);
+			size_t r = size;//0;//fwrite(ptr, 1, size, _fp);
 			if (r != size) {
 				_ioErr = true;
 			}
@@ -81,16 +77,16 @@ File::~File() {
 }
 
 bool File::open(const char *filename, const char *directory, const char *mode) {	
-	_impl->close();
-	char buf[512];
-	sprintf(buf, "%s", filename);
-	char *p = buf;
-	string_lower(p);
-	bool opened = _impl->open(buf, mode);
-	if (!opened) { // let's try uppercase
-		string_upper(p);
-		opened = _impl->open(buf, mode);
-	}
+//	_impl->close();
+//	char buf[512];
+//	sprintf(buf, "%s", filename);
+//	char *p = buf;
+//	string_lower(p);
+	bool opened = _impl->open(filename, mode);
+//	if (!opened) { // let's try lowercase
+//		string_lower(p);
+//		opened = _impl->open(buf, mode);
+//	}
 	return opened;
 }
 

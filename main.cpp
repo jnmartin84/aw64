@@ -28,22 +28,15 @@
 extern System *stub;
 
 int main(void) {
-	init_interrupts();
-	display_init(RESOLUTION_320x240, DEPTH_16_BPP, 2, GAMMA_NONE, ANTIALIAS_RESAMPLE);
-
-	console_init();
-	console_set_render_mode(RENDER_AUTOMATIC);
-
 	const char *dataPath = "";
 	const char *savePath = "";
 
-	//FCS
-	//g_debugMask = DBG_INFO; // DBG_VM | DBG_BANK | DBG_VIDEO | DBG_SER | DBG_SND
-	//g_debugMask = DBG_RES ;
-	g_debugMask = 0;//DBG_RES | DBG_INFO |  DBG_VIDEO;// | DBG_VIDEO | DBG_SER | DBG_SND | DBG_BANK;
-	
+	g_debugMask = 0;//DBG_BANK | DBG_RES;// | DBG_INFO;// |  DBG_VIDEO;// | DBG_VIDEO | DBG_SER | DBG_SND | DBG_BANK;
+
 	Engine* e = new Engine(stub, dataPath, savePath);
+	
 	e->init();
+	
 	e->run();
 
 	delete e;
