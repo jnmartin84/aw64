@@ -3,11 +3,15 @@ nintendo 64 port of https://github.com/fabiensanglard/Another-World-Bytecode-Int
 
 # how to build
 grab the latest libdragon trunk, build the toolchain, build the library
-get the data files (bank* and memlist.bin) from the 20th Anniversary release of OOTW on GOG
-git clone this repo, cd to the repo dir
-mkdir filesystem
-copy the data files into filesystem directory
+
+get the game data files (bank* and memlist.bin) from the 20th Anniversary release of OOTW on GOG
+
+git clone this repo
+
+copy the game data files into filesystem directory
+
 make
+
 play it
 
 # controls
